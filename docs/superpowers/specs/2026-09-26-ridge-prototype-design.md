@@ -1,7 +1,7 @@
 # Ridge prototype: a greybox of the ascending world
 
 **Date:** 2026-09-26
-**Status:** Design approved in conversation; not yet implemented
+**Status:** Implemented; Studio Play checklist and findings pending
 **Builds on:** `docs/push-a-giant-gdd.md` ("An ascending world and a growing
 player"), `docs/giant-scaling.md` (sizing rigs at runtime)
 
@@ -74,7 +74,12 @@ giants. Nothing here writes the profile.
 - **Giants stand still.** Each terrace clones its roster giant, sizes it with
   `Model:ScaleTo`, anchors it in its rest pose and plays no animation, so
   the Animator fix-up is not needed for giants yet. A thrown giant is
-  unanchored and ragdolls with no animation playing.
+  unanchored and tumbles limp (`PlatformStand`) with no animation playing.
+- **Throws are aimed, not sized.** A thrown giant is launched at a fixed
+  angle with the speed that brings it back down to the lane's height
+  `throwClearance` giant heights past the cliff edge. (The first draft
+  launched at a speed in giant heights per second; gravity does not grow
+  with the giants, so that lands short of the edge at every roster size.)
 - **Player size goes through one per-player component.** `PlayerSize`
   (bound to `PlayerLoaded`) holds the current scale and applies it to every
   body: `Model:ScaleTo`, feet kept on the ground, walk speed through
@@ -128,7 +133,9 @@ starts at `z = 0`, and each terrace starts where the previous one ends.
 | `baseSpawnDepth`  | 6                | 1× heights; then a shop strip and the ramp to terrace 1               |
 | `cliffDrop`       | 12               | 1× heights: the base's top above the valley floor (60 studs)          |
 | `postSpacing`     | 2                | Arrival heights between the 1× lamp posts along each cliff edge       |
-| `throwSpeed`      | 1.5 / 1.0        | Giant heights per second, sideways (+X) / upward, when thrown         |
+| `throwClearance`  | 1                | Giant heights past the +X edge where a thrown giant is back at lane height |
+| `throwAngle`      | 35°              | Launch angle above the horizontal                                     |
+| `throwSpin`       | 1.5              | Radians per second of tumble toward the cliff                         |
 | `throwResetAfter` | 6                | Seconds before a thrown giant is replaced                             |
 
 ### What that produces
@@ -180,23 +187,26 @@ Pure modules have a `*.spec.ts` beside them.
   base and every terrace as boxes (block, zone slabs, ramp, barrier, shop
   boxes, posts) and points (arrival, fighter marks); `terraceIndexAt(layout,
   z)` clamped to the base and the summit.
-- `split-box.ts` (pure) — splits a box larger than 2048 on any axis.
+- `box.ts` (pure) — the `Box` type and `splitBox`, which splits a box
+  larger than 2048 on any axis.
 - `fall-policy.ts` (pure) — `hasFallen(rootY, surfaceY, valleyY,
   bodyHeight)`: true when the root is more than three body heights below the
   surface, or low enough to be standing on the valley floor.
-- `place-body.ts` (pure core) — the root CFrame that puts a body's feet on a
-  point, from `HipHeight` and the root's height; used by teleport, recovery
-  and giant placement.
+- `throw-arc.ts` (pure) — `throwVelocity(distance, angle, gravity)`.
+- `src/server/util/place-body.ts` (pure core) — the root CFrame that puts a
+  body's feet on a point, from `HipHeight` and the root's height; used by
+  teleport, recovery, giant placement and `PlayerSize`, so it sits outside
+  both features.
 - `ridge-builder.ts` — creates the Parts, models, labels, spawn and valley
   floor from a layout.
 - `ridge-giants.ts` — clones, sizes, places and anchors a terrace's giant;
   throws it (unanchor, server network owner, `PlatformStand`, velocity) and
   replaces it after `throwResetAfter`.
 - `ridge-service.ts` — builds in `onInit`; exposes `getLayout()`,
-  `arrivalCFrame(index)` and `throwGiant(index)`.
+  `arrivalCFrame(index)`, `teleport(body, index)` and `throwGiant(index)`.
 - `fall-recovery.ts` — component on `PlayerLoaded`; each frame applies
   `hasFallen` to the current body and returns it to its terrace's arrival
-  point.
+  point, then leaves it alone for a second while the client catches up.
 
 **Feature `player-size`** (`src/server/features/player-size/`)
 
@@ -210,7 +220,8 @@ Pure modules have a `*.spec.ts` beside them.
 
 **Feature `scaled-rigs`**
 
-- `src/shared/features/scaled-rigs/scaled-rig-tag.ts` — `SCALED_RIG_TAG`.
+- `src/shared/features/scaled-rigs/scaled-rigs.ts` — `SCALED_RIG_TAG`, and
+  the Workspace attribute that switches the fix-up off for comparison.
 - `src/client/features/scaled-rigs/scaled-rig.ts` — client component bound
   to the tag; collects `Motor6D` and `AnimationConstraint` joints (re-collect
   on descendant changes) and on `OnPhysics` sets each `Transform` to its
@@ -221,9 +232,12 @@ Pure modules have a `*.spec.ts` beside them.
 - `size <k> [player]` — `PlayerSize.setScale`, `0.5 ≤ k ≤ 25`.
 - `tp <terrace> [player]` — to a terrace's arrival point; 0 is the base.
 - `throw <terrace>` — throws that terrace's giant.
+- `fixup <true|false>` — the scaled-rig animation fix-up on every client, to
+  compare with it off.
 
-The admin guard moves out of `admin.ts` into a small shared module so the
-new command files use the same check.
+The admin guard moves out of `admin.ts` into `admin-guard.ts` so the new
+command files (`player-size.ts`, `ridge.ts`, `scaled-rigs.ts`) use the same
+check.
 
 ## Engine behaviour relied on, and risks
 
@@ -245,12 +259,17 @@ new command files use the same check.
 **Specs:** layout (terrace count, growth ratio, contiguous terraces, risers
 of `stepHeight · h(n−1)`, ramp endpoints on consecutive tops within the
 terrace footprint, shop terraces, no ramp on the last terrace,
-`terraceIndexAt` including clamping), `splitBox`, `hasFallen`, the feet
-placement, and `bodyTuning`.
+`terraceIndexAt` including clamping, throws landing past the edge),
+`splitBox`, `hasFallen`, `throwVelocity`, the feet placement, `bodyTuning`
+and `isValidScale`.
 
-**Headless build check:** a run-in-roblox script builds the place, runs the
-server, and asserts the ridge exists: 26 terraces, 26 giants on their marks,
-a spawn at the base.
+**Headless build check** (`npm run check:ridge`,
+`tools/ridge/check-ridge.luau`): runs the game place's server scripts and
+asserts the ridge: every terrace a persistent model, a spawn at the base
+facing +Z, 26 giants at their scale on their marks facing −X, each ramp
+rising from its terrace's top to the next one's, no part over 2048 studs,
+no warnings logged; then throws giants 1 and 26 with the game's launch code
+and checks each goes down past the +X edge.
 
 **Studio Play checklist** (`npm run studio`, Play):
 
