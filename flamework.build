@@ -17,7 +17,14 @@
 		"push-a-giant:out/server/features/coins/coins-service@CoinsService": "server/features/coins/coins-service@CoinsService",
 		"push-a-giant:out/client/controllers/player-data-store@PlayerDataStore": "client/controllers/player-data-store@PlayerDataStore",
 		"push-a-giant:out/shared/network@GlobalEvents": "shared/network@GlobalEvents",
-		"push-a-giant:out/shared/network@GlobalFunctions": "shared/network@GlobalFunctions"
+		"push-a-giant:out/shared/network@GlobalFunctions": "shared/network@GlobalFunctions",
+		"push-a-giant:out/client/features/scaled-rigs/scaled-rig@ScaledRig": "client/features/scaled-rigs/scaled-rig@ScaledRig",
+		"push-a-giant:out/server/features/player-size/player-size@PlayerSize": "server/features/player-size/player-size@PlayerSize",
+		"push-a-giant:out/server/commands/player-size@PlayerSizeCommands": "server/commands/player-size@PlayerSizeCommands",
+		"push-a-giant:out/server/features/ridge/ridge-service@RidgeService": "server/features/ridge/ridge-service@RidgeService",
+		"push-a-giant:out/server/commands/ridge@RidgeCommands": "server/commands/ridge@RidgeCommands",
+		"push-a-giant:out/server/commands/scaled-rigs@ScaledRigCommands": "server/commands/scaled-rigs@ScaledRigCommands",
+		"push-a-giant:out/server/features/ridge/fall-recovery@FallRecovery": "server/features/ridge/fall-recovery@FallRecovery"
 	},
 	"metadata": {}
 }

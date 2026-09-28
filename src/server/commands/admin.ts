@@ -1,20 +1,10 @@
 import { Components } from "@flamework/components";
 import { Dependency } from "@flamework/core";
-import { Centurion, CenturionType, Command, CommandContext, CommandGuard, Guard, Register } from "@rbxts/centurion";
-import { RunService } from "@rbxts/services";
+import { Centurion, CenturionType, Command, CommandContext, Guard, Register } from "@rbxts/centurion";
 import { CoinsWallet } from "server/features/coins/coins-wallet";
 import { PlayerCharacter } from "server/services/player/player-character";
 import { PlayerDataNode } from "server/services/player/player-data-node";
-
-const ADMIN_IDS = new Set<number>([418255008]);
-
-const isAdmin: CommandGuard = (ctx) => {
-	if (!RunService.IsStudio() && !ADMIN_IDS.has(ctx.executor.UserId)) {
-		ctx.error("Insufficient permission!");
-		return false;
-	}
-	return true;
-};
+import { isAdmin } from "./admin-guard";
 
 function formatValue(lines: string[], value: unknown, depth: number): void {
 	const indent = "  ".rep(depth);
