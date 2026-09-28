@@ -46,37 +46,6 @@
 			"$properties": {
 				"FilteringEnabled": true,
 				"StreamingEnabled": true
-			},
-			"Baseplate": {
-				"$className": "Part",
-				"$properties": {
-					"Anchored": true,
-					"Size": [512, 16, 512],
-					"CFrame": [0, -8, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
-					"Color": [0.2980392157, 0.7019607843, 0.2274509804],
-					"Material": "Plastic",
-					"TopSurface": "Smooth"
-				},
-				"Texture": {
-					"$className": "Texture",
-					"$properties": {
-						"Texture": "rbxassetid://5038203384",
-						"Face": "Top",
-						"Color3": [0.45098, 1, 0],
-						"Transparency": 0.85,
-						"StudsPerTileU": 20,
-						"StudsPerTileV": 20,
-						"ZIndex": 1
-					}
-				}
-			},
-			"SpawnLocation": {
-				"$className": "SpawnLocation",
-				"$properties": {
-					"Anchored": true,
-					"Size": [12, 1, 12],
-					"CFrame": [0, 0.5, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]
-				}
 			}
 		},
 		"Lighting": {
