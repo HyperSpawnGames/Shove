@@ -22,8 +22,12 @@ testing). The design is in `docs/push-a-giant-gdd.md`.
 
 ## Getting started
 
+Install [Rokit](https://github.com/rojo-rbx/rokit/releases) first (download the
+zip for your platform, run `rokit self-install`, then open a new terminal).
+
 ```sh
 rokit install         # pins Rojo, run-in-roblox, Lune
+rojo plugin install   # one-time: the Rojo plugin matching the pinned Rojo
 # Node 24 LTS (see .node-version); npm refuses older versions.
 npm install
 npm run test:setup    # one-time: enables Studio's FFlagEnableLoadModule for Jest
@@ -38,6 +42,23 @@ Press Play in the Studio window that opened: you should see `[push-a-giant] serv
 spawns and a coins HUD is wired end-to-end (button → intent → validation →
 mutator → Replica → React). Studio uses ProfileStore's mock store, so coins reset
 between Play sessions.
+
+## Live sync
+
+```sh
+npm run dev           # compile, then rbxtsc -w + rojo serve in one terminal
+```
+
+With a place open in Studio (`npm run studio` the first time), go to
+**Plugins → Rojo → Connect** (`localhost:34872`). Every save here recompiles
+and lands in Studio within a second or two; Ctrl+C stops both processes, and if
+either one dies the other is stopped too.
+
+Sync is one-way, from files to Studio. Anything Rojo manages (the `TS` folders,
+`rbxts_include`, `ServerStorage.Giants`, and the properties in
+`default.project.json`) is overwritten on the next sync, so change it here, not
+in Studio. Something built in Studio that should be kept goes into the repo as
+an `.rbxm` under `assets/` and a `$path` entry in `default.project.json`.
 
 ## Building gameplay
 

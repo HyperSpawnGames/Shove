@@ -5,6 +5,7 @@
 	"scripts": {
 		"build": "rbxtsc",
 		"watch": "rbxtsc -w",
+		"dev": "rbxtsc && node scripts/dev.mjs",
 		"assemble": "rbxtsc && rojo build default.project.json -o push-a-giant.rbxl",
 		"open": "node scripts/open-studio.mjs push-a-giant.rbxl",
 		"studio": "npm run assemble && npm run open",

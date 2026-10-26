@@ -52,6 +52,8 @@ Flamework (services/controllers/components, DI, typed networking), ProfileStore
 ## Commands
 
 - `npm run build` / `npm run watch` — compile TS → Luau
+- `npm run dev` — live sync: compile, then `rbxtsc -w` and `rojo serve`
+  together; connect from Studio's Rojo plugin. Files → Studio only.
 - `npm run assemble` — compile + build `push-a-giant.rbxl`
 - `npm run studio` — assemble, then open `push-a-giant.rbxl` in a new Studio
   instance (`npm run open` opens without rebuilding). Every run opens a fresh
