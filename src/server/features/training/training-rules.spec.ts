@@ -12,7 +12,7 @@ describe("strengthPerRep", () => {
 });
 
 describe("canStartTraining", () => {
-	const ready = { training: false, alive: true, onGround: true };
+	const ready = { training: false, alive: true, onGround: true, held: false };
 
 	it("allows a living player on the ground", () => {
 		expect(canStartTraining(ready)).toBe(true);
@@ -28,6 +28,10 @@ describe("canStartTraining", () => {
 
 	it("refuses a player in the air", () => {
 		expect(canStartTraining({ ...ready, onGround: false })).toBe(false);
+	});
+
+	it("refuses a body something else holds in place", () => {
+		expect(canStartTraining({ ...ready, held: true })).toBe(false);
 	});
 });
 

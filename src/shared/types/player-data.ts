@@ -9,6 +9,8 @@ export interface PlayerData {
 	Coins: number;
 	/** training feature: permanent Strength earned from push-ups. */
 	Strength: number;
+	/** wins feature: the spendable currency giant victories pay. */
+	Wins: number;
 	Settings: { [key: string]: boolean };
 }
 

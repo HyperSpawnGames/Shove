@@ -7,11 +7,13 @@ export interface TrainingStartState {
 	training: boolean;
 	alive: boolean;
 	onGround: boolean;
+	/** The body is anchored: something else (a giant fight) holds it in place. */
+	held: boolean;
 }
 
-/** Training starts only from a living body standing on ground, and never twice. */
+/** Training starts only from a living, free body standing on ground, and never twice. */
 export function canStartTraining(state: TrainingStartState): boolean {
-	return !state.training && state.alive && state.onGround;
+	return !state.training && state.alive && state.onGround && !state.held;
 }
 
 /**

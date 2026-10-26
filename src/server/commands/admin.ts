@@ -4,6 +4,7 @@ import { Centurion, CenturionType, Command, CommandContext, CommandGuard, Guard,
 import { RunService } from "@rbxts/services";
 import { CoinsWallet } from "server/features/coins/coins-wallet";
 import { StrengthStat } from "server/features/training/strength-stat";
+import { WinsWallet } from "server/features/wins/wins-wallet";
 import { PlayerCharacter } from "server/services/player/player-character";
 import { PlayerDataNode } from "server/services/player/player-data-node";
 
@@ -139,5 +140,30 @@ class AdminCommands {
 
 		strength.addStrength(amount);
 		ctx.reply(`Gave ${amount} Strength to ${player.Name} (now ${strength.getStrength()})`);
+	}
+
+	// wins feature — remove alongside the wins folders.
+	@Command({
+		name: "givewins",
+		description: "Give Wins to a player",
+		arguments: [
+			{ name: "player", description: "The target player", type: CenturionType.Player },
+			{ name: "amount", description: "Wins to add; must be above 0", type: CenturionType.Number },
+		],
+	})
+	giveWins(ctx: CommandContext, player: Player, amount: number) {
+		const wallet = Dependency<Components>().getComponent<WinsWallet>(player);
+
+		if (!wallet) {
+			ctx.error(`Player data not loaded for ${player.Name}`);
+			return;
+		}
+		if (!(amount > 0)) {
+			ctx.error(`Rejected: the amount must be above 0`);
+			return;
+		}
+
+		wallet.addWins(amount);
+		ctx.reply(`Gave ${amount} Wins to ${player.Name} (now ${wallet.getWins()})`);
 	}
 }

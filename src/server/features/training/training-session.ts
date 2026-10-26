@@ -76,6 +76,7 @@ export class TrainingSession extends BaseComponent<{}, Player> implements OnStar
 			training: this.isTraining(),
 			alive: humanoid !== undefined && humanoid.Health > 0 && root !== undefined,
 			onGround: humanoid !== undefined && humanoid.FloorMaterial !== Enum.Material.Air,
+			held: root?.Anchored === true,
 		});
 		if (!allowed || root === undefined) return;
 

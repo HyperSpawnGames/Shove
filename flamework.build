@@ -22,7 +22,15 @@
 		"push-a-giant:out/server/features/training/strength-stat@StrengthStat": "server/features/training/strength-stat@StrengthStat",
 		"push-a-giant:out/server/features/training/strength-leaderstats@StrengthLeaderstats": "server/features/training/strength-leaderstats@StrengthLeaderstats",
 		"push-a-giant:out/server/features/training/training-session@TrainingSession": "server/features/training/training-session@TrainingSession",
-		"push-a-giant:out/server/features/training/training-service@TrainingService": "server/features/training/training-service@TrainingService"
+		"push-a-giant:out/server/features/training/training-service@TrainingService": "server/features/training/training-service@TrainingService",
+		"push-a-giant:out/server/features/wins/wins-wallet@WinsWallet": "server/features/wins/wins-wallet@WinsWallet",
+		"push-a-giant:out/server/features/wins/wins-leaderstats@WinsLeaderstats": "server/features/wins/wins-leaderstats@WinsLeaderstats",
+		"push-a-giant:out/client/features/wins/wins-hud-controller@WinsHudController": "client/features/wins/wins-hud-controller@WinsHudController",
+		"push-a-giant:out/server/features/encounter/arena-service@ArenaService": "server/features/encounter/arena-service@ArenaService",
+		"push-a-giant:out/server/features/encounter/encounter-session@EncounterSession": "server/features/encounter/encounter-session@EncounterSession",
+		"push-a-giant:out/server/features/encounter/encounter-service@EncounterService": "server/features/encounter/encounter-service@EncounterService",
+		"push-a-giant:out/client/features/encounter/fight-scene@FightScene": "client/features/encounter/fight-scene@FightScene",
+		"push-a-giant:out/client/features/encounter/encounter-controller@EncounterController": "client/features/encounter/encounter-controller@EncounterController"
 	},
 	"metadata": {}
 }

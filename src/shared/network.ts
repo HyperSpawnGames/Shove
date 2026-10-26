@@ -7,6 +7,9 @@ interface ClientToServerEvents {
 	// decides whether the player may train and when each rep completes.
 	requestStartTraining(): void;
 	requestStopTraining(): void;
+	// encounter feature: one shove in a giant fight. The server caps the rate
+	// and decides how far the meter moves.
+	requestShove(): void;
 }
 
 interface ServerToClientEvents {
