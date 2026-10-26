@@ -11,6 +11,8 @@ export interface PlayerData {
 	Strength: number;
 	/** wins feature: the spendable currency giant victories pay. */
 	Wins: number;
+	/** encounter feature: giants of the staircase beaten at least once; each opens the next ramp. */
+	HighestCleared: number;
 	Settings: { [key: string]: boolean };
 }
 

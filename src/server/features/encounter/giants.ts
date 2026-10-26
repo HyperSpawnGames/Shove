@@ -1,9 +1,13 @@
-/** One opponent: which prefab, how big, how hard, what it pays, where it waits. */
+/** One opponent: which prefab, how big, how hard, what it pays. */
 export interface GiantDefinition {
 	/** Prefab name under ServerStorage.Giants. */
 	modelId: string;
 	displayName: string;
-	/** Model:ScaleTo factor. The prefabs are 1x and about player height. */
+	/**
+	 * Model:ScaleTo factor. The prefabs are 1x and about player height. Kept
+	 * at 2.5 or below: past that, animation and layered clothing break
+	 * (docs/giant-scaling.md).
+	 */
 	scale: number;
 	/** The Strength at which a steady clicker wins in 10–15 seconds. */
 	recommendedStrength: number;
@@ -11,10 +15,12 @@ export interface GiantDefinition {
 	resistancePerSecond: number;
 	/** Wins every victory pays. */
 	winsPayout: number;
-	/** Where the giant stands in the lobby, feet on the ground. */
-	lobbyPosition: Vector3;
 }
 
+/**
+ * The staircase, bottom first: GIANTS[i] stands on terrace i, and beating it
+ * the first time opens the ramp to terrace i + 1.
+ */
 export const GIANTS: readonly GiantDefinition[] = [
 	{
 		modelId: "Noob",
@@ -23,6 +29,21 @@ export const GIANTS: readonly GiantDefinition[] = [
 		recommendedStrength: 20,
 		resistancePerSecond: 0.04,
 		winsPayout: 5,
-		lobbyPosition: new Vector3(0, 1, -36),
+	},
+	{
+		modelId: "Goblin",
+		displayName: "Goblin",
+		scale: 2,
+		recommendedStrength: 120,
+		resistancePerSecond: 0.04,
+		winsPayout: 20,
+	},
+	{
+		modelId: "Viking",
+		displayName: "Viking",
+		scale: 2.5,
+		recommendedStrength: 500,
+		resistancePerSecond: 0.04,
+		winsPayout: 75,
 	},
 ];

@@ -3,6 +3,7 @@ import { Dependency } from "@flamework/core";
 import { Centurion, CenturionType, Command, CommandContext, CommandGuard, Guard, Register } from "@rbxts/centurion";
 import { RunService } from "@rbxts/services";
 import { CoinsWallet } from "server/features/coins/coins-wallet";
+import { ArenaProgress } from "server/features/encounter/arena-progress";
 import { StrengthStat } from "server/features/training/strength-stat";
 import { WinsWallet } from "server/features/wins/wins-wallet";
 import { PlayerCharacter } from "server/services/player/player-character";
@@ -140,6 +141,31 @@ class AdminCommands {
 
 		strength.addStrength(amount);
 		ctx.reply(`Gave ${amount} Strength to ${player.Name} (now ${strength.getStrength()})`);
+	}
+
+	// encounter feature — remove alongside the encounter folders.
+	@Command({
+		name: "unlockgiants",
+		description: "Open the staircase up to and including giant <count> (1 is the first), as if each below was beaten",
+		arguments: [
+			{ name: "player", description: "The target player", type: CenturionType.Player },
+			{ name: "count", description: "Giants to mark as beaten", type: CenturionType.Number },
+		],
+	})
+	unlockGiants(ctx: CommandContext, player: Player, count: number) {
+		const progress = Dependency<Components>().getComponent<ArenaProgress>(player);
+
+		if (!progress) {
+			ctx.error(`Player data not loaded for ${player.Name}`);
+			return;
+		}
+		if (!(count >= 1) || count % 1 !== 0) {
+			ctx.error(`Rejected: count must be a whole number of at least 1`);
+			return;
+		}
+
+		progress.recordWin(count - 1);
+		ctx.reply(`${player.Name} has cleared ${progress.getHighestCleared()} giants`);
 	}
 
 	// wins feature — remove alongside the wins folders.

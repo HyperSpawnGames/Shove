@@ -30,3 +30,16 @@ export const ArenaAttribute = {
 
 /** The opponent inside an arena Model. */
 export const ARENA_GIANT_NAME = "Giant";
+
+/** Workspace folder holding the staircase: terraces, ramps, gates and the giants on them. */
+export const STAIRCASE_FOLDER = "Staircase";
+
+/**
+ * CollectionService tag on everything the staircase locks per player: each
+ * ramp's gate wall (a BasePart) and each giant's Challenge prompt. The server
+ * builds them locked for everyone; each client opens the ones its player has
+ * unlocked. The server still refuses a challenge to a locked giant.
+ */
+export const STAIRCASE_LOCK_TAG = "StaircaseLock";
+/** number attribute on a locked thing: the HighestCleared value that opens it. */
+export const OPENS_AT_ATTRIBUTE = "OpensAt";

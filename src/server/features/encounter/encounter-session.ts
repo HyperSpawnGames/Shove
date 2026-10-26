@@ -30,10 +30,13 @@ import {
 	strengthRatio,
 	takeShove,
 } from "./encounter-rules";
-import type { GiantDefinition } from "./giants";
+import { ArenaProgress } from "./arena-progress";
+import { GiantDefinition, GIANTS } from "./giants";
 
 interface Fight {
 	giant: GiantDefinition;
+	/** The giant's place on the staircase. */
+	giantIndex: number;
 	arena: Arena;
 	/** Where the player goes when the fight is over, win or lose. */
 	returnTo: CFrame;
@@ -65,6 +68,7 @@ export class EncounterSession extends BaseComponent<{}, Player> implements OnSta
 		private readonly strength: StrengthStat,
 		private readonly training: TrainingSession,
 		private readonly wins: WinsWallet,
+		private readonly progress: ArenaProgress,
 	) {
 		super();
 	}
@@ -77,9 +81,14 @@ export class EncounterSession extends BaseComponent<{}, Player> implements OnSta
 		return this.fight !== undefined;
 	}
 
-	/** A challenge from the giant's prompt. Refused while fighting or without a living body. */
-	public requestChallenge(giant: GiantDefinition, returnTo: CFrame): void {
-		if (this.fight !== undefined) return;
+	/**
+	 * A challenge from giant `giantIndex`'s prompt. Refused while fighting,
+	 * without a living body, or when that giant's ramp is still locked for this
+	 * player (a client can open its own gate walls; it cannot open this check).
+	 */
+	public requestChallenge(giantIndex: number, returnTo: CFrame): void {
+		const giant = GIANTS[giantIndex];
+		if (this.fight !== undefined || giant === undefined || !this.progress.canChallenge(giantIndex)) return;
 
 		const body = this.character.getCharacter();
 		const humanoid = body?.FindFirstChildOfClass("Humanoid");
@@ -93,6 +102,7 @@ export class EncounterSession extends BaseComponent<{}, Player> implements OnSta
 		const now = os.clock();
 		const fight: Fight = {
 			giant,
+			giantIndex,
 			arena,
 			returnTo,
 			phase: "Ready",
@@ -160,7 +170,10 @@ export class EncounterSession extends BaseComponent<{}, Player> implements OnSta
 
 		fight.meter = math.clamp(fight.meter, 0, 1);
 		fight.phase = outcome === "won" ? "Won" : "Lost";
-		if (outcome === "won") this.wins.addWins(fight.giant.winsPayout);
+		if (outcome === "won") {
+			this.wins.addWins(fight.giant.winsPayout);
+			this.progress.recordWin(fight.giantIndex);
+		}
 		this.publish(fight, true);
 
 		fight.threads.push(task.delay(RESULT_SECONDS, () => this.end(fight, true)));

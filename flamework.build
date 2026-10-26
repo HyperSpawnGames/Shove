@@ -30,7 +30,9 @@
 		"push-a-giant:out/server/features/encounter/encounter-session@EncounterSession": "server/features/encounter/encounter-session@EncounterSession",
 		"push-a-giant:out/server/features/encounter/encounter-service@EncounterService": "server/features/encounter/encounter-service@EncounterService",
 		"push-a-giant:out/client/features/encounter/fight-scene@FightScene": "client/features/encounter/fight-scene@FightScene",
-		"push-a-giant:out/client/features/encounter/encounter-controller@EncounterController": "client/features/encounter/encounter-controller@EncounterController"
+		"push-a-giant:out/client/features/encounter/encounter-controller@EncounterController": "client/features/encounter/encounter-controller@EncounterController",
+		"push-a-giant:out/server/features/encounter/arena-progress@ArenaProgress": "server/features/encounter/arena-progress@ArenaProgress",
+		"push-a-giant:out/client/features/encounter/staircase-controller@StaircaseController": "client/features/encounter/staircase-controller@StaircaseController"
 	},
 	"metadata": {}
 }

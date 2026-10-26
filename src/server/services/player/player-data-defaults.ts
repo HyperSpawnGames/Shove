@@ -7,5 +7,6 @@ export const DEFAULT_PLAYER_DATA: PlayerData = {
 	Coins: 0,
 	Strength: 0,
 	Wins: 0,
+	HighestCleared: 0,
 	Settings: {},
 };
