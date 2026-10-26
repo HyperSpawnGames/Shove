@@ -11,9 +11,13 @@ export const EncounterAttribute = {
 	GiantName: "EncounterGiantName",
 	/** number: Wins a victory pays. */
 	Reward: "EncounterReward",
+	/** SurgePhase or unset: the giant is winding up a surge (Warn) or lunging (Push). */
+	Surge: "EncounterSurge",
 } as const;
 
 export type EncounterPhase = "Ready" | "Struggle" | "Won" | "Lost";
+
+export type SurgePhase = "Warn" | "Push";
 
 /** Workspace folder holding every live arena, each a Model named by its player's UserId. */
 export const ARENAS_FOLDER = "Arenas";
@@ -30,6 +34,9 @@ export const ArenaAttribute = {
 
 /** The opponent inside an arena Model. */
 export const ARENA_GIANT_NAME = "Giant";
+
+/** CollectionService tag on each giant waiting on its terrace, which clients animate idly. */
+export const LOBBY_GIANT_TAG = "LobbyGiant";
 
 /** Workspace folder holding the staircase: terraces, ramps, gates and the giants on them. */
 export const STAIRCASE_FOLDER = "Staircase";

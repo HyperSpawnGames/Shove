@@ -14,20 +14,27 @@ import {
 	MAX_SHOVE_GAIN,
 	MAX_SHOVES_PER_SECOND,
 	METER_PUBLISH_RATE,
+	FIRST_SURGE_DELAY,
 	READY_SECONDS,
 	RESULT_SECONDS,
 	SHOVE_BURST,
 	START_METER,
 	STRENGTH_RATIO_OFFSET,
+	SURGE_SHARE,
+	SURGE_TIMING,
 } from "./encounter-config";
 import {
-	applyResistance,
 	fightOutcome,
 	FightOutcome,
 	fullShoveBucket,
+	planSurge,
+	resistanceBetween,
 	ShoveBucket,
 	shoveGain,
+	splitResistance,
 	strengthRatio,
+	SurgePlan,
+	surgeState,
 	takeShove,
 } from "./encounter-rules";
 import { ArenaProgress } from "./arena-progress";
@@ -44,6 +51,9 @@ interface Fight {
 	meter: number;
 	struggleStartedAt: number;
 	bucket: ShoveBucket;
+	/** The giant's next (or current) surge, and the clock of the last push applied. */
+	surge: SurgePlan;
+	pushedUntil: number;
 	lastPublishedAt: number;
 	connections: RBXScriptConnection[];
 	threads: thread[];
@@ -109,6 +119,8 @@ export class EncounterSession extends BaseComponent<{}, Player> implements OnSta
 			meter: START_METER,
 			struggleStartedAt: now,
 			bucket: fullShoveBucket(now, SHOVE_BURST),
+			surge: planSurge(now, SURGE_TIMING, 0),
+			pushedUntil: now,
 			lastPublishedAt: 0,
 			connections: [],
 			threads: [],
@@ -142,13 +154,25 @@ export class EncounterSession extends BaseComponent<{}, Player> implements OnSta
 	private beginStruggle(fight: Fight): void {
 		if (this.fight !== fight) return;
 
+		const now = os.clock();
 		fight.phase = "Struggle";
-		fight.struggleStartedAt = os.clock();
-		fight.bucket = fullShoveBucket(fight.struggleStartedAt, SHOVE_BURST);
+		fight.struggleStartedAt = now;
+		fight.bucket = fullShoveBucket(now, SHOVE_BURST);
+		fight.surge = planSurge(now + FIRST_SURGE_DELAY - SURGE_TIMING.minGap, SURGE_TIMING, math.random());
+		fight.pushedUntil = now;
 		this.publish(fight, true);
+
+		const { steadyPerSecond, surgePerSecond } = splitResistance(
+			fight.giant.resistancePerSecond,
+			SURGE_SHARE,
+			SURGE_TIMING,
+		);
 		fight.connections.push(
-			RunService.Heartbeat.Connect((dt) => {
-				fight.meter = applyResistance(fight.meter, fight.giant.resistancePerSecond, dt);
+			RunService.Heartbeat.Connect(() => {
+				const clock = os.clock();
+				fight.meter -= resistanceBetween(fight.pushedUntil, clock, fight.surge, steadyPerSecond, surgePerSecond);
+				fight.pushedUntil = clock;
+				if (clock >= fight.surge.endsAt) fight.surge = planSurge(clock, SURGE_TIMING, math.random());
 				this.settle(fight);
 			}),
 		);
@@ -212,6 +236,7 @@ export class EncounterSession extends BaseComponent<{}, Player> implements OnSta
 			EncounterAttribute.Meter,
 			EncounterAttribute.GiantName,
 			EncounterAttribute.Reward,
+			EncounterAttribute.Surge,
 		]) {
 			this.instance.SetAttribute(name, undefined);
 		}
@@ -219,10 +244,15 @@ export class EncounterSession extends BaseComponent<{}, Player> implements OnSta
 
 	private publish(fight: Fight, force: boolean): void {
 		const now = os.clock();
-		if (!force && now - fight.lastPublishedAt < 1 / METER_PUBLISH_RATE) return;
+		const surge = fight.phase === "Struggle" ? surgeState(fight.surge, now) : undefined;
+		// Surge edges go out at once, so the warning is never late to the client.
+		if (!force && surge === this.instance.GetAttribute(EncounterAttribute.Surge)) {
+			if (now - fight.lastPublishedAt < 1 / METER_PUBLISH_RATE) return;
+		}
 
 		fight.lastPublishedAt = now;
 		this.instance.SetAttribute(EncounterAttribute.Phase, fight.phase);
+		this.instance.SetAttribute(EncounterAttribute.Surge, surge);
 		this.instance.SetAttribute(EncounterAttribute.Meter, math.clamp(fight.meter, 0, 1));
 	}
 

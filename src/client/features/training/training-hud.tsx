@@ -2,6 +2,7 @@ import React from "@rbxts/react";
 import { formatNumber } from "client/ui/format-number";
 import { usePlayerAttribute } from "client/ui/hooks/use-player-attribute";
 import { usePlayerField } from "client/ui/hooks/use-player-field";
+import { usePunch } from "client/ui/hooks/use-punch";
 import { TrainingAttribute } from "shared/features/training/training-attributes";
 import { StrengthPopups } from "./strength-popups";
 
@@ -19,6 +20,8 @@ export function TrainingHud({ onToggle }: TrainingHudProps) {
 	const training = usePlayerAttribute(TrainingAttribute.Training) === true;
 	const perRep = usePlayerAttribute(TrainingAttribute.StrengthPerRep);
 	const secondsPerRep = usePlayerAttribute(TrainingAttribute.SecondsPerRep);
+	const totalPunch = usePunch(strength, 1.15);
+	const buttonPunch = usePunch(training, 1.12);
 
 	if (strength === undefined) return <></>;
 
@@ -65,7 +68,9 @@ export function TrainingHud({ onToggle }: TrainingHudProps) {
 					TextXAlignment={Enum.TextXAlignment.Left}
 					BackgroundTransparency={1}
 					Size={new UDim2(1, 0, 0, 32)}
-				/>
+				>
+					<uiscale ref={totalPunch} />
+				</textlabel>
 				<textlabel
 					key="Rate"
 					LayoutOrder={3}
@@ -92,6 +97,7 @@ export function TrainingHud({ onToggle }: TrainingHudProps) {
 				AutoButtonColor={true}
 				Event={{ Activated: onToggle }}
 			>
+				<uiscale ref={buttonPunch} />
 				<uicorner CornerRadius={new UDim(0, 12)} />
 				<uistroke Thickness={2} Color={new Color3(0, 0, 0)} Transparency={0.4} />
 			</textbutton>

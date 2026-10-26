@@ -1,5 +1,6 @@
 import { Controller, OnStart } from "@flamework/core";
 import React from "@rbxts/react";
+import Signal from "@rbxts/signal";
 import { Players, UserInputService } from "@rbxts/services";
 import { UiController } from "client/controllers/ui-controller";
 import { Events } from "client/network";
@@ -18,11 +19,13 @@ export class EncounterController implements OnStart {
 	private readonly player = Players.LocalPlayer;
 	private scene?: FightScene;
 	private lastShoveAt = 0;
+	/** Fires for every shove sent, so the HUD and the scene react at once rather than at the next meter update. */
+	private readonly shoved = new Signal<() => void>();
 
 	constructor(private readonly ui: UiController) {}
 
 	onStart(): void {
-		this.ui.mount("EncounterHud", <EncounterHud onShove={() => this.shove()} />, {
+		this.ui.mount("EncounterHud", <EncounterHud onShove={() => this.shove()} shoved={this.shoved} />, {
 			ignoreGuiInset: true,
 			displayOrder: 10,
 		});
@@ -42,6 +45,8 @@ export class EncounterController implements OnStart {
 		if (now - this.lastShoveAt < 1 / SHOVES_PER_SECOND) return;
 		this.lastShoveAt = now;
 		Events.requestShove.fire();
+		this.scene?.onShove();
+		this.shoved.Fire();
 	}
 
 	private syncPhase(): void {

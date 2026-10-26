@@ -5,12 +5,17 @@ import {
 	MAX_SHOVES_PER_SECOND,
 	START_METER,
 	STRENGTH_RATIO_OFFSET,
+	SURGE_SHARE,
+	SURGE_TIMING,
 } from "./encounter-config";
 import {
-	applyResistance,
 	expectedFightSeconds,
 	fightOutcome,
 	fullShoveBucket,
+	planSurge,
+	resistanceBetween,
+	splitResistance,
+	surgeState,
 	shoveGain,
 	strengthRatio,
 	takeShove,
@@ -33,12 +38,6 @@ describe("shoveGain", () => {
 
 	it("is capped", () => {
 		expect(shoveGain(1000, 0.01, 0.5)).toBe(0.5);
-	});
-});
-
-describe("applyResistance", () => {
-	it("moves the meter left over time", () => {
-		expect(applyResistance(0.5, 0.04, 2)).toBeCloseTo(0.42);
 	});
 });
 
@@ -87,6 +86,54 @@ describe("takeShove", () => {
 		const [, drained] = takeShove({ tokens: 0.5, updatedAt: 0 }, 0, 8, 3);
 		const [ok] = takeShove(drained, 1, 8, 3);
 		expect(ok).toBe(true);
+	});
+});
+
+describe("surges", () => {
+	const timing = { minGap: 2, maxGap: 4, warning: 0.5, duration: 0.5 };
+
+	it("warns before it pushes", () => {
+		const plan = planSurge(10, timing, 0);
+		expect(surgeState(plan, 11.6)).toBe("Warn");
+		expect(surgeState(plan, 12.2)).toBe("Push");
+		expect(surgeState(plan, 12.6)).toBe(undefined);
+		expect(surgeState(plan, 11)).toBe(undefined);
+	});
+
+	it("draws the gap from the roll", () => {
+		expect(planSurge(0, timing, 0).startsAt).toBe(2);
+		expect(planSurge(0, timing, 0.5).startsAt).toBe(3);
+	});
+
+	it("pushes harder in a surge than steadily", () => {
+		const { steadyPerSecond, surgePerSecond } = splitResistance(0.04, 0.75, timing);
+		expect(surgePerSecond).toBeGreaterThan(steadyPerSecond * 10);
+	});
+
+	it("counts only the part of a frame inside the lunge as surge", () => {
+		const plan = planSurge(0, timing, 0); // lunge 2.0 to 2.5
+		expect(resistanceBetween(1.9, 2.1, plan, 1, 10)).toBeCloseTo(0.2 + 1);
+		expect(resistanceBetween(2.4, 2.6, plan, 1, 10)).toBeCloseTo(0.2 + 1);
+		expect(resistanceBetween(3, 3.5, plan, 1, 10)).toBeCloseTo(0.5);
+	});
+
+	it("averages back to the giant's push over a fight", () => {
+		const average = 0.04;
+		const { steadyPerSecond, surgePerSecond } = splitResistance(average, SURGE_SHARE, SURGE_TIMING);
+		let total = 0;
+		let clock = 0;
+		const rolls = [0.1, 0.9, 0.3, 0.7, 0.5];
+		for (let i = 0; i < 200; i++) {
+			const plan = planSurge(clock, SURGE_TIMING, rolls[i % rolls.size()]);
+			total += resistanceBetween(clock, plan.endsAt, plan, steadyPerSecond, surgePerSecond);
+			clock = plan.endsAt;
+		}
+		expect(total / clock).toBeCloseTo(average, 3);
+	});
+
+	it("lands each lunge as a visible chunk of the bar", () => {
+		const { surgePerSecond } = splitResistance(0.04, SURGE_SHARE, SURGE_TIMING);
+		expect(surgePerSecond * SURGE_TIMING.duration).toBeGreaterThanOrEqual(0.06);
 	});
 });
 

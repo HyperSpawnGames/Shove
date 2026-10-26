@@ -31,3 +31,10 @@ export const ARENA_HALF_LENGTH_PER_SCALE = 6;
 export const ARENA_WIDTH = 30;
 /** Studs from the meeting point to a 1x fighter's root; a giant's scales with it. */
 export const FIGHTER_REACH = 2.2;
+
+/** Share of a giant's push that comes in surges rather than steadily. */
+export const SURGE_SHARE = 0.75;
+/** Surge rhythm: quiet gap, wind-up warning and lunge length, in seconds. */
+export const SURGE_TIMING = { minGap: 1.8, maxGap: 3.4, warning: 0.7, duration: 0.35 };
+/** Quiet seconds at the start of the struggle before the first surge can land. */
+export const FIRST_SURGE_DELAY = 1.2;

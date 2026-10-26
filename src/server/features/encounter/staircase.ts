@@ -1,5 +1,9 @@
 import { CollectionService } from "@rbxts/services";
-import { OPENS_AT_ATTRIBUTE, STAIRCASE_LOCK_TAG } from "shared/features/encounter/encounter-attributes";
+import {
+	LOBBY_GIANT_TAG,
+	OPENS_AT_ATTRIBUTE,
+	STAIRCASE_LOCK_TAG,
+} from "shared/features/encounter/encounter-attributes";
 import { cloneGiant, placeOnFloor } from "./giant-models";
 import type { GiantDefinition } from "./giants";
 import { rampLayout, TerraceLayout, terraceLayout } from "./world-layout";
@@ -141,6 +145,7 @@ export function buildGiant(
 	placeOnFloor(model, CFrame.lookAt(standing, standing.add(new Vector3(0, 0, 1))));
 	model.Name = giant.modelId;
 	model.Parent = parent;
+	CollectionService.AddTag(model, LOBBY_GIANT_TAG);
 
 	const root = model.PrimaryPart ?? model.FindFirstChild("HumanoidRootPart");
 	if (!root?.IsA("BasePart")) return undefined;
