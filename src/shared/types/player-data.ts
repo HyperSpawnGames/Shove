@@ -7,6 +7,8 @@ export const PLAYER_DATA_TOKEN = "PlayerData";
 export interface PlayerData {
 	Version: number;
 	Coins: number;
+	/** training feature: permanent Strength earned from push-ups. */
+	Strength: number;
 	Settings: { [key: string]: boolean };
 }
 

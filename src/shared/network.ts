@@ -3,9 +3,17 @@ import { Networking } from "@flamework/networking";
 interface ClientToServerEvents {
 	// coins feature: ask the server for one coin. The server decides.
 	requestCoin(): void;
+	// training feature: ask to start or stop automatic push-ups. The server
+	// decides whether the player may train and when each rep completes.
+	requestStartTraining(): void;
+	requestStopTraining(): void;
 }
 
-interface ServerToClientEvents {}
+interface ServerToClientEvents {
+	// training feature: a rep completed and granted this much Strength. Drives
+	// the rep animation and the +Strength popup; the total travels over Replica.
+	trainingRepCompleted(strengthGained: number): void;
+}
 
 interface ClientToServerFunctions {}
 

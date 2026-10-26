@@ -5,5 +5,6 @@ import { LATEST_VERSION } from "./migrations";
 export const DEFAULT_PLAYER_DATA: PlayerData = {
 	Version: LATEST_VERSION,
 	Coins: 0,
+	Strength: 0,
 	Settings: {},
 };

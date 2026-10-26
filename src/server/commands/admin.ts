@@ -3,6 +3,7 @@ import { Dependency } from "@flamework/core";
 import { Centurion, CenturionType, Command, CommandContext, CommandGuard, Guard, Register } from "@rbxts/centurion";
 import { RunService } from "@rbxts/services";
 import { CoinsWallet } from "server/features/coins/coins-wallet";
+import { StrengthStat } from "server/features/training/strength-stat";
 import { PlayerCharacter } from "server/services/player/player-character";
 import { PlayerDataNode } from "server/services/player/player-data-node";
 
@@ -113,5 +114,30 @@ class AdminCommands {
 
 		wallet.addCoins(amount);
 		ctx.reply(`Gave ${amount} coins to ${player.Name}`);
+	}
+
+	// training feature — remove alongside the training folders.
+	@Command({
+		name: "givestrength",
+		description: "Give Strength to a player",
+		arguments: [
+			{ name: "player", description: "The target player", type: CenturionType.Player },
+			{ name: "amount", description: "Strength to add; must be above 0", type: CenturionType.Number },
+		],
+	})
+	giveStrength(ctx: CommandContext, player: Player, amount: number) {
+		const strength = Dependency<Components>().getComponent<StrengthStat>(player);
+
+		if (!strength) {
+			ctx.error(`Player data not loaded for ${player.Name}`);
+			return;
+		}
+		if (!(amount > 0)) {
+			ctx.error(`Rejected: Strength only grows, so the amount must be above 0`);
+			return;
+		}
+
+		strength.addStrength(amount);
+		ctx.reply(`Gave ${amount} Strength to ${player.Name} (now ${strength.getStrength()})`);
 	}
 }
