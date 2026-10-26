@@ -9,7 +9,7 @@ import {
 	ARENA_WIDTH,
 	FIGHTER_REACH,
 } from "./encounter-config";
-import { cloneGiant, placeOnFloor } from "./giant-models";
+import { cloneGiant, placeOnFloor, startIdle } from "./giant-models";
 import type { GiantDefinition } from "./giants";
 
 export interface Arena {
@@ -46,9 +46,6 @@ export class ArenaService implements OnStart {
 	 * sits above their feet. Release it with destroy().
 	 */
 	public build(player: Player, giant: GiantDefinition, rootHeight: number): Arena | undefined {
-		const giantModel = cloneGiant(giant);
-		if (giantModel === undefined) return undefined;
-
 		const slot = this.acquireSlot();
 		const center = ARENA_ORIGIN.add(new Vector3(slot * ARENA_SPACING, 0, 0));
 		const right = new Vector3(1, 0, 0);
@@ -57,6 +54,16 @@ export class ArenaService implements OnStart {
 		const model = new Instance("Model");
 		model.Name = tostring(player.UserId);
 		model.ModelStreamingMode = Enum.ModelStreamingMode.PersistentPerPlayer;
+		// In the world before the giant is cloned into it: the engine scales a rig in place.
+		model.Parent = this.folder;
+		model.AddPersistentPlayer(player);
+
+		const giantModel = cloneGiant(giant, model);
+		if (giantModel === undefined) {
+			model.Destroy();
+			this.usedSlots.delete(slot);
+			return undefined;
+		}
 
 		this.addPart(model, "Platform", new Vector3(halfLength * 2, PLATFORM_THICKNESS, ARENA_WIDTH), {
 			cframe: new CFrame(center.sub(new Vector3(0, PLATFORM_THICKNESS / 2, 0))),
@@ -79,7 +86,7 @@ export class ArenaService implements OnStart {
 		const giantFloor = center.add(right.mul(FIGHTER_REACH * giant.scale));
 		placeOnFloor(giantModel, CFrame.lookAt(giantFloor, giantFloor.sub(right)));
 		giantModel.Name = ARENA_GIANT_NAME;
-		giantModel.Parent = model;
+		startIdle(giantModel);
 
 		const playerRoot = center.sub(right.mul(FIGHTER_REACH)).add(new Vector3(0, rootHeight, 0));
 		const playerStart = CFrame.lookAt(playerRoot, playerRoot.add(right));
@@ -89,9 +96,6 @@ export class ArenaService implements OnStart {
 		model.SetAttribute(ArenaAttribute.PlayerStart, playerStart);
 		model.SetAttribute(ArenaAttribute.GiantStart, giantModel.GetPivot());
 		model.SetAttribute(ArenaAttribute.TravelLength, math.max(travel, 4));
-
-		model.Parent = this.folder;
-		model.AddPersistentPlayer(player);
 		return { model, playerStart, slot };
 	}
 

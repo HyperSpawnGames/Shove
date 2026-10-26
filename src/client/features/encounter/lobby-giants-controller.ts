@@ -1,6 +1,6 @@
 import { Controller, OnStart } from "@flamework/core";
 import { CollectionService, RunService, Workspace } from "@rbxts/services";
-import { mixPoses, RigPoser } from "client/util/rig-poser";
+import { mixPoses, RigPoser, SpringPoser } from "client/util/rig-poser";
 import { LOBBY_GIANT_TAG } from "shared/features/encounter/encounter-attributes";
 import { flexPose, idlePose } from "./giant-idle-poses";
 
@@ -11,7 +11,7 @@ const FLEX_EVERY = 7;
 const FLEX_SECONDS = 1.6;
 
 interface IdleGiant {
-	poser: RigPoser;
+	poser: SpringPoser;
 	/** Offsets this giant's rhythm so a row of giants never moves in step. */
 	phase: number;
 }
@@ -32,17 +32,18 @@ export class LobbyGiantsController implements OnStart {
 		});
 		for (const instance of CollectionService.GetTagged(LOBBY_GIANT_TAG)) this.add(instance);
 
-		RunService.RenderStepped.Connect(() => this.step());
+		RunService.RenderStepped.Connect((dt) => this.step(dt));
 	}
 
 	private add(instance: Instance): void {
 		if (!instance.IsA("Model") || this.giants.has(instance)) return;
-		const poser = new RigPoser(instance);
-		if (!poser.isR15()) return;
+		const rig = new RigPoser(instance);
+		if (!rig.isR15()) return;
+		const poser = new SpringPoser(rig);
 		this.giants.set(instance, { poser, phase: math.random() * 10 });
 	}
 
-	private step(): void {
+	private step(dt: number): void {
 		const camera = Workspace.CurrentCamera;
 		if (camera === undefined) return;
 		const now = os.clock();
@@ -58,7 +59,7 @@ export class LobbyGiantsController implements OnStart {
 			const intoFlex = time % FLEX_EVERY;
 			// A half sine in and out of the flex; the square root holds it near full in the middle.
 			const flex = intoFlex < FLEX_SECONDS ? math.sin((intoFlex / FLEX_SECONDS) * math.pi) ** 0.5 : 0;
-			giant.poser.apply(mixPoses(idlePose(time), flexPose(time), flex));
+			giant.poser.step(mixPoses(idlePose(time), flexPose(time), flex), dt);
 		}
 	}
 }

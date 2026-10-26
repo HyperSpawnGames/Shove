@@ -4,7 +4,7 @@ import {
 	OPENS_AT_ATTRIBUTE,
 	STAIRCASE_LOCK_TAG,
 } from "shared/features/encounter/encounter-attributes";
-import { cloneGiant, placeOnFloor } from "./giant-models";
+import { cloneGiant, placeOnFloor, startIdle } from "./giant-models";
 import type { GiantDefinition } from "./giants";
 import { rampLayout, TerraceLayout, terraceLayout } from "./world-layout";
 
@@ -128,7 +128,7 @@ export function buildGiant(
 	giant: GiantDefinition,
 	layout: TerraceLayout,
 ): StaircaseGiant | undefined {
-	const model = cloneGiant(giant);
+	const model = cloneGiant(giant, parent);
 	if (model === undefined) return undefined;
 
 	const position = layout.giantPosition;
@@ -144,8 +144,8 @@ export function buildGiant(
 	const standing = position.add(new Vector3(0, PEDESTAL_HEIGHT, 0));
 	placeOnFloor(model, CFrame.lookAt(standing, standing.add(new Vector3(0, 0, 1))));
 	model.Name = giant.modelId;
-	model.Parent = parent;
 	CollectionService.AddTag(model, LOBBY_GIANT_TAG);
+	startIdle(model);
 
 	const root = model.PrimaryPart ?? model.FindFirstChild("HumanoidRootPart");
 	if (!root?.IsA("BasePart")) return undefined;

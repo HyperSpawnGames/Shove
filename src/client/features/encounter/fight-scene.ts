@@ -1,5 +1,5 @@
 import { RunService, Workspace } from "@rbxts/services";
-import { mixPoses, Pose, RigPoser, scalePose } from "client/util/rig-poser";
+import { addPoses, mixPoses, RigPoser, scalePose, SpringPoser } from "client/util/rig-poser";
 import {
 	ARENA_GIANT_NAME,
 	ARENAS_FOLDER,
@@ -13,32 +13,54 @@ import {
 	METER_SMOOTHING,
 	THROW_SECONDS,
 } from "./encounter-config";
-import { flailPose, strainPose, victoryPose } from "./fight-poses";
+import { puffDust } from "./dust";
+import { flailPose, stepPose, strainPose, stumblePose, victoryPose, withFlatFeet } from "./fight-poses";
+import { approach, Stepper } from "./stepper";
+
+/** Roblox's default R15 emotes and fall, free to play in any game. */
+const CHEER_ANIMATION = "rbxassetid://507770677";
+const LAUGH_ANIMATION = "rbxassetid://507770818";
+const FALL_ANIMATION = "rbxassetid://507767968";
 
 const ARENA_WAIT_SECONDS = 10;
 /** Seconds to sink from standing into the stance at the start. */
 const SETTLE_SECONDS = 0.6;
 /** A fighter's height the poses and nudges are tuned for. */
 const BASE_HEIGHT = 5.4;
+/** A 1x fighter's stride, and the speed at which its steps show in full. */
+const STRIDE = 1.6;
+const FULL_STEP_SPEED = 2.5;
 
 type Loser = "giant" | "player";
-
-/** Moves `value` toward `target` by at most `step`. */
-function approach(value: number, target: number, step: number): number {
-	return value < target ? math.min(value + step, target) : math.max(value - step, target);
-}
 
 /** Exponential decay that does not depend on the frame rate. */
 function decay(value: number, rate: number, dt: number): number {
 	return value * math.exp(-rate * dt);
 }
 
+/** Plays a one-off animation on a rig's Animator, on this client. */
+function playTrack(rig: Model | undefined, animationId: string, looped: boolean): AnimationTrack | undefined {
+	const animator = rig?.FindFirstChildOfClass("Humanoid")?.FindFirstChildOfClass("Animator");
+	if (animator === undefined) return undefined;
+	const animation = new Instance("Animation");
+	animation.AnimationId = animationId;
+	const track = animator.LoadAnimation(animation);
+	track.Looped = looped;
+	track.Priority = Enum.AnimationPriority.Action;
+	track.Play(0.15);
+	return track;
+}
+
 /**
  * Draws one fight on this client: the camera, both fighters' poses, their
- * slide along the platform as the meter moves, the giant's wind-up and lunge
- * on every surge, and the loser's fall. Every change here is local; the
- * arena reaches no other player, and the server decides the fight from its
- * own meter.
+ * steps along the platform as the meter moves (feet keeping pace with the
+ * body), alternating-hand thrusts, the giant's knee-up wind-up and stomping
+ * lunge on every surge, the player's stumble back, dust, and the loser's
+ * fall. Joints spring toward their poses, so motion overshoots and settles,
+ * on top of the animation tracks both bodies play: their idles throughout,
+ * a cheer or laugh for the winner and a fall for the loser. Every change here
+ * is local; the arena reaches no other player, and the server decides the
+ * fight from its own meter.
  */
 export class FightScene {
 	private stopped = false;
@@ -51,12 +73,19 @@ export class FightScene {
 	private travel = 0;
 	private giant?: Model;
 	private root?: BasePart;
-	private playerPoser?: RigPoser;
-	private giantPoser?: RigPoser;
+	private playerPoser?: SpringPoser;
+	private giantPoser?: SpringPoser;
+	/** Tracks this scene started on the player's own body, stopped when it ends. */
+	private playerTracks: AnimationTrack[] = [];
 	/** Giant height over a player's, so its nudges and the camera scale with it. */
 	private giantScale = 1;
 	private cameraEye = Vector3.zero;
 	private cameraFocus = Vector3.zero;
+	private floorY = 0;
+	private playerSteps = new Stepper(STRIDE, FULL_STEP_SPEED);
+	private giantSteps = new Stepper(STRIDE, FULL_STEP_SPEED);
+	/** The hand of the next thrust: 1 right, -1 left. */
+	private thrustSide = 1;
 
 	private shownMeter = 0.5;
 	private settle = 0;
@@ -92,9 +121,12 @@ export class FightScene {
 		this.giant = giant;
 		this.root = root;
 		this.shownMeter = this.serverMeter();
-		this.playerPoser = new RigPoser(character!);
-		this.giantPoser = new RigPoser(giant);
+		this.playerPoser = new SpringPoser(new RigPoser(character!));
+		this.giantPoser = new SpringPoser(new RigPoser(giant));
 		this.giantScale = giant.GetExtentsSize().Y / BASE_HEIGHT;
+		this.giantSteps = new Stepper(STRIDE * this.giantScale, FULL_STEP_SPEED * this.giantScale);
+		const humanoid = character!.FindFirstChildOfClass("Humanoid");
+		this.floorY = playerStart.Position.Y - (humanoid ? humanoid.HipHeight : 2) - root.Size.Y / 2;
 
 		this.placeCamera(character!);
 		this.connection = RunService.RenderStepped.Connect((dt) => this.step(dt));
@@ -103,6 +135,7 @@ export class FightScene {
 
 	/** The local player shoved: arms snap out, the giant rocks, the camera ticks. */
 	public onShove(): void {
+		this.thrustSide = -this.thrustSide;
 		this.playerShove = 1;
 		this.giantHit = math.min(this.giantHit + 0.5, 1);
 		this.shake = math.max(this.shake, 0.12);
@@ -121,6 +154,17 @@ export class FightScene {
 		this.shake = 1;
 		const from = loser === "giant" ? this.giant!.GetPivot() : this.root!.CFrame;
 		this.throwState = { loser, startedAt: os.clock(), from };
+
+		const character = this.player.Character;
+		if (loser === "giant") {
+			const cheer = playTrack(character, CHEER_ANIMATION, true);
+			if (cheer) this.playerTracks.push(cheer);
+			playTrack(this.giant, FALL_ANIMATION, true);
+		} else {
+			playTrack(this.giant, LAUGH_ANIMATION, true);
+			const fall = playTrack(character, FALL_ANIMATION, true);
+			if (fall) this.playerTracks.push(fall);
+		}
 	}
 
 	/** Gives back the camera and the player's pose. The server removes the arena. */
@@ -128,6 +172,8 @@ export class FightScene {
 		this.stopped = true;
 		this.connection?.Disconnect();
 		this.playerPoser?.restore();
+		for (const track of this.playerTracks) track.Stop(0.2);
+		this.playerTracks = [];
 
 		const camera = Workspace.CurrentCamera;
 		const humanoid = this.player.Character?.FindFirstChildOfClass("Humanoid");
@@ -162,11 +208,25 @@ export class FightScene {
 
 		const thrown = this.throwState;
 		const throwTime = thrown ? math.min(now - thrown.startedAt, THROW_SECONDS) : 0;
-		if (thrown?.loser !== "player") this.root!.CFrame = this.playerStart.add(offset).add(playerNudge);
-		if (thrown?.loser !== "giant") this.giant!.PivotTo(this.giantStart.add(offset).add(giantNudge));
-		if (thrown) this.flyLoser(thrown, throwTime, axis);
+		const playerAt = this.playerStart.add(offset).add(playerNudge);
+		const giantAt = this.giantStart.add(offset).add(giantNudge);
+		this.playerSteps.update(playerAt.Position, axis, dt);
+		this.giantSteps.update(giantAt.Position, axis.mul(-1), dt);
+		this.dustFootfalls();
 
-		this.poseFighters(now, lead, thrown, throwTime);
+		// Pose first, then set each body down so its lower foot rests on the floor:
+		// whatever the legs are doing (a stride, the stomp, a stumble), no foot
+		// sinks in or hovers.
+		this.poseFighters(now, dt, lead, thrown, throwTime);
+		if (thrown?.loser !== "player") {
+			this.root!.CFrame = playerAt;
+			this.root!.CFrame = playerAt.add(new Vector3(0, -this.footClearance(this.player.Character), 0));
+		}
+		if (thrown?.loser !== "giant") {
+			this.giant!.PivotTo(giantAt);
+			this.giant!.PivotTo(giantAt.add(new Vector3(0, -this.footClearance(this.giant), 0)));
+		}
+		if (thrown) this.flyLoser(thrown, throwTime, axis);
 		this.moveCamera(offset, thrown);
 	}
 
@@ -176,10 +236,46 @@ export class FightScene {
 		if (surge === "Push" && this.lastSurge !== "Push") {
 			this.playerHit = 1;
 			this.shake = math.max(this.shake, 0.8);
+			// The stomp lands and the player skids back.
+			this.puffAtFoot(this.giant!, "RightFoot", this.giantScale, 24);
+			this.puffAtFoot(this.player.Character, "LeftFoot", 1, 10);
 		}
 		this.lastSurge = typeIs(surge, "string") ? surge : undefined;
 		this.windup = approach(this.windup, surge === "Warn" ? 1 : 0, dt * (surge === "Warn" ? 1.6 : 6));
 		this.lunge = approach(this.lunge, surge === "Push" ? 1 : 0, dt * (surge === "Push" ? 12 : 3));
+	}
+
+	/** How far a rig's lower foot sits above the floor; negative when it is sunk in. */
+	private footClearance(rig: Model | undefined): number {
+		let lowest = math.huge;
+		for (const name of ["LeftFoot", "RightFoot"]) {
+			const foot = rig?.FindFirstChild(name);
+			if (!foot?.IsA("BasePart")) continue;
+			const half = foot.Size.div(2);
+			for (const x of [-1, 1]) {
+				for (const y of [-1, 1]) {
+					for (const z of [-1, 1]) {
+						lowest = math.min(lowest, foot.CFrame.PointToWorldSpace(half.mul(new Vector3(x, y, z))).Y);
+					}
+				}
+			}
+		}
+		return lowest === math.huge ? 0 : lowest - this.floorY;
+	}
+
+	/** Small puffs under the giant's feet as its steps land; it is heavy. */
+	private dustFootfalls(): void {
+		const falls = this.giantSteps.takeFootfalls();
+		this.playerSteps.takeFootfalls();
+		if (falls > 0 && this.giantSteps.amount > 0.4 && this.throwState === undefined) {
+			this.puffAtFoot(this.giant!, math.random() < 0.5 ? "RightFoot" : "LeftFoot", this.giantScale, 5);
+		}
+	}
+
+	private puffAtFoot(rig: Model | undefined, footName: string, size: number, count: number): void {
+		const foot = rig?.FindFirstChild(footName);
+		if (!foot?.IsA("BasePart")) return;
+		puffDust(new Vector3(foot.Position.X, this.floorY + 0.3, foot.Position.Z), size, count);
 	}
 
 	private flyLoser(thrown: { loser: Loser; from: CFrame }, time: number, axis: Vector3): void {
@@ -191,11 +287,18 @@ export class FightScene {
 		else this.root!.CFrame = moved;
 	}
 
-	private poseFighters(now: number, lead: number, thrown: { loser: Loser } | undefined, throwTime: number): void {
+	private poseFighters(
+		now: number,
+		dt: number,
+		lead: number,
+		thrown: { loser: Loser } | undefined,
+		throwTime: number,
+	): void {
 		let playerPose = strainPose({
 			time: now,
 			lead,
 			shove: math.min(this.playerShove, 1),
+			thrustSide: this.thrustSide,
 			hit: this.playerHit,
 			windup: 0,
 			lunge: 0,
@@ -204,26 +307,43 @@ export class FightScene {
 			time: now + 0.7,
 			lead: -lead,
 			shove: 0,
+			thrustSide: 1,
 			hit: this.giantHit,
 			windup: this.windup,
 			lunge: this.lunge,
 		});
 
+		playerPose = addPoses(
+			playerPose,
+			stepPose(this.playerSteps.phase, this.playerSteps.amount),
+			stumblePose(now, this.playerSteps.backward),
+		);
+		giantPose = addPoses(
+			giantPose,
+			stepPose(this.giantSteps.phase, this.giantSteps.amount),
+			stumblePose(now, this.giantSteps.backward * 0.5),
+		);
+
+		playerPose = withFlatFeet(playerPose);
+		giantPose = withFlatFeet(giantPose);
+
 		if (thrown) {
+			// The cheer, laugh and fall tracks carry most of the result; the code
+			// pose only leans into them.
 			const blend = math.min(throwTime / 0.25, 1);
-			const won: Pose = mixPoses(playerPose, victoryPose(now), blend);
-			const lost: Pose = mixPoses(giantPose, victoryPose(now), blend);
+			const celebrate = scalePose(victoryPose(now), 0.35);
+			const tumble = scalePose(flailPose(now), 0.5);
 			if (thrown.loser === "giant") {
-				playerPose = won;
-				giantPose = mixPoses(giantPose, flailPose(now), blend);
+				playerPose = mixPoses(playerPose, celebrate, blend);
+				giantPose = mixPoses(giantPose, tumble, blend);
 			} else {
-				giantPose = lost;
-				playerPose = mixPoses(playerPose, flailPose(now), blend);
+				giantPose = mixPoses(giantPose, celebrate, blend);
+				playerPose = mixPoses(playerPose, tumble, blend);
 			}
 		}
 
-		this.playerPoser!.apply(scalePose(playerPose, this.settle));
-		this.giantPoser!.apply(scalePose(giantPose, this.settle));
+		this.playerPoser!.step(scalePose(playerPose, this.settle), dt);
+		this.giantPoser!.step(scalePose(giantPose, this.settle), dt);
 	}
 
 	private placeCamera(character: Model): void {
