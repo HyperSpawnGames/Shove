@@ -4,9 +4,11 @@ import {
 	OPENS_AT_ATTRIBUTE,
 	STAIRCASE_LOCK_TAG,
 } from "shared/features/encounter/encounter-attributes";
+import { formatNumber } from "shared/format-number";
 import { cloneGiant, placeOnFloor, startIdle } from "./giant-models";
 import type { GiantDefinition } from "./giants";
-import { rampLayout, TerraceLayout, terraceLayout } from "./world-layout";
+import { RampLayout, rampBetween, TerraceLayout } from "./world-layout";
+import type { ClearZone } from "./zones/types";
 
 /** The bottom of every raised terrace block: the underside of the baseplate. */
 const GROUND_BOTTOM_Y = -16;
@@ -17,12 +19,8 @@ const PEDESTAL_HEIGHT = 1;
 /** Studs in front of a giant (toward the spawn) where a finished fight puts the player back. */
 const RETURN_DISTANCE = 12;
 
-const TERRACE_COLORS = [
-	Color3.fromRGB(120, 170, 90),
-	Color3.fromRGB(190, 160, 110),
-	Color3.fromRGB(150, 160, 175),
-	Color3.fromRGB(170, 120, 110),
-];
+/** A neutral grass; each zone's environment restyles its own terraces. */
+const TERRACE_COLOR = Color3.fromRGB(120, 170, 90);
 
 export interface StaircaseGiant {
 	prompt: ProximityPrompt;
@@ -67,64 +65,100 @@ function label(parent: Instance, text: string, offset: Vector3, size: UDim2): vo
 	textLabel.Parent = billboard;
 }
 
-/** Terrace `tier`'s raised block. Tier 0 is the baseplate and gets none. */
-export function buildTerrace(parent: Instance, tier: number, layout: TerraceLayout): void {
-	if (tier === 0) return;
+/** Slot `slot`'s raised block, or undefined for slot 0, which is the baseplate. */
+export function buildTerrace(parent: Instance, slot: number, layout: TerraceLayout): BasePart | undefined {
+	if (slot === 0) return undefined;
 	const depth = layout.frontZ - layout.backZ;
 	const height = layout.floorY - GROUND_BOTTOM_Y;
-	part(
+	return part(
 		parent,
-		`Terrace${tier}`,
+		`Terrace${slot}`,
 		new Vector3(layout.width, height, depth),
 		new CFrame(0, GROUND_BOTTOM_Y + height / 2, (layout.frontZ + layout.backZ) / 2),
-		TERRACE_COLORS[tier % TERRACE_COLORS.size()],
+		TERRACE_COLOR,
 		Enum.Material.Grass,
 	);
 }
 
-/**
- * The ramp up to terrace `tier`, and the gate wall across that terrace's
- * whole front edge, which only beating `below` opens.
- */
-export function buildRamp(parent: Instance, tier: number, below: GiantDefinition): void {
-	const ramp = rampLayout(tier);
-	if (ramp === undefined) return;
+/** A gate on a ramp: the progress that opens it, and the giant to beat. */
+export interface GateSpec {
+	opensAt: number;
+	beat: GiantDefinition;
+}
 
+/**
+ * The ramp up onto slot `slot`, and, when `gate` is given, a gate wall
+ * across that terrace's whole front edge, which only beating `gate.beat`
+ * opens.
+ */
+export function buildRamp(
+	parent: Instance,
+	slot: number,
+	lower: TerraceLayout,
+	upper: TerraceLayout,
+	gate?: GateSpec,
+): RampLayout {
+	const ramp = rampBetween(lower, upper);
 	const length = ramp.to.sub(ramp.from).Magnitude + 2;
 	const middle = ramp.from.Lerp(ramp.to, 0.5);
 	const surface = CFrame.lookAt(middle, ramp.to).mul(new CFrame(0, -RAMP_THICKNESS / 2, 0));
 	part(
 		parent,
-		`Ramp${tier}`,
+		`Ramp${slot}`,
 		new Vector3(RAMP_WIDTH, RAMP_THICKNESS, length),
 		surface,
 		Color3.fromRGB(110, 110, 120),
 		Enum.Material.Slate,
 	);
+	if (gate === undefined) return ramp;
 
-	const upper = terraceLayout(tier);
-	const gate = part(
+	const wall = part(
 		parent,
-		`Gate${tier}`,
+		`Gate${slot}`,
 		new Vector3(upper.width, GATE_HEIGHT, 1),
 		new CFrame(0, upper.floorY + GATE_HEIGHT / 2, upper.frontZ - 0.5),
 		Color3.fromRGB(80, 170, 255),
 		Enum.Material.ForceField,
 	);
-	gate.Transparency = 0.2;
+	wall.Transparency = 0.2;
 	label(
-		gate,
-		`Defeat the ${below.displayName} to open`,
+		wall,
+		`Defeat the ${gate.beat.displayName} to open`,
 		new Vector3(0, GATE_HEIGHT / 2 + 2, 0),
 		UDim2.fromOffset(320, 50),
 	);
-	lock(gate, tier);
+	lock(wall, gate.opensAt);
+	return ramp;
 }
 
-/** Giant `tier` on its pedestal, facing the spawn, with its sign and Challenge prompt. */
+/**
+ * The keep-clear boxes around a giant on `layout`: its pedestal with room to
+ * stand and challenge, out to where a finished fight puts the player back.
+ */
+export function giantClearZone(giant: GiantDefinition, layout: TerraceLayout): ClearZone {
+	const reach = RETURN_DISTANCE + 4 * giant.scale + 4;
+	const width = 10 * giant.scale + 12;
+	const floor = layout.giantPosition;
+	const height = 6 * giant.scale + 10;
+	return {
+		cframe: new CFrame(floor.X, floor.Y + height / 2, floor.Z + reach / 2 - 5 * giant.scale),
+		size: new Vector3(width, height, reach + 10 * giant.scale),
+	};
+}
+
+/** The walking lane along the middle of a terrace, from its front edge to its back edge. */
+export function laneClearZone(layout: TerraceLayout): ClearZone {
+	const depth = layout.frontZ - layout.backZ;
+	return {
+		cframe: new CFrame(0, layout.floorY + 6, (layout.frontZ + layout.backZ) / 2),
+		size: new Vector3(RAMP_WIDTH + 4, 12, depth),
+	};
+}
+
+/** Giant `index` on its pedestal, facing the spawn, with its sign and Challenge prompt. */
 export function buildGiant(
 	parent: Instance,
-	tier: number,
+	index: number,
 	giant: GiantDefinition,
 	layout: TerraceLayout,
 ): StaircaseGiant | undefined {
@@ -152,7 +186,7 @@ export function buildGiant(
 	const [, size] = model.GetBoundingBox();
 	label(
 		root,
-		`${giant.displayName}\n<font color="#FFC850">${giant.recommendedStrength} Strength</font>  <font color="#6EC8FF">+${giant.winsPayout} Wins</font>`,
+		`${giant.displayName}\n<font color="#FFC850">${formatNumber(giant.recommendedStrength)} Strength</font>  <font color="#6EC8FF">+${formatNumber(giant.winsPayout)} Wins</font>`,
 		new Vector3(0, size.Y / 2 + 2.5, 0),
 		UDim2.fromOffset(260, 90),
 	);
@@ -165,7 +199,7 @@ export function buildGiant(
 	prompt.MaxActivationDistance = 10 + 4 * giant.scale;
 	prompt.RequiresLineOfSight = false;
 	prompt.Parent = root;
-	lock(prompt, tier);
+	lock(prompt, index);
 
 	const returnSpot = position.add(new Vector3(0, 3, RETURN_DISTANCE + 4 * giant.scale));
 	const returnTo = CFrame.lookAt(returnSpot, new Vector3(position.X, returnSpot.Y, position.Z));

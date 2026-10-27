@@ -18,6 +18,7 @@ import {
 	surgeState,
 	shoveGain,
 	strengthRatio,
+	styledSurge,
 	takeShove,
 } from "./encounter-rules";
 
@@ -134,6 +135,29 @@ describe("surges", () => {
 	it("lands each lunge as a visible chunk of the bar", () => {
 		const { surgePerSecond } = splitResistance(0.04, SURGE_SHARE, SURGE_TIMING);
 		expect(surgePerSecond * SURGE_TIMING.duration).toBeGreaterThanOrEqual(0.06);
+	});
+});
+
+describe("styledSurge", () => {
+	const timing = { minGap: 2, maxGap: 4, warning: 0.5, duration: 0.5 };
+
+	it("keeps the defaults with no overrides", () => {
+		const styled = styledSurge(timing, 0.75);
+		expect(styled.timing.maxGap).toBe(4);
+		expect(styled.share).toBe(0.75);
+	});
+
+	it("applies overrides field by field", () => {
+		const styled = styledSurge(timing, 0.75, { warning: 0.3, share: 0.9 });
+		expect(styled.timing.warning).toBe(0.3);
+		expect(styled.timing.minGap).toBe(2);
+		expect(styled.share).toBe(0.9);
+	});
+
+	it("never lets the gap range invert or the share leave 0..1", () => {
+		const styled = styledSurge(timing, 0.75, { minGap: 6, share: 3 });
+		expect(styled.timing.maxGap).toBeGreaterThanOrEqual(styled.timing.minGap);
+		expect(styled.share).toBe(1);
 	});
 });
 

@@ -1,7 +1,7 @@
 import React, { useBinding, useEffect, useState } from "@rbxts/react";
 import Signal from "@rbxts/signal";
 import { Players, RunService } from "@rbxts/services";
-import { formatNumber } from "client/ui/format-number";
+import { formatNumber } from "shared/format-number";
 import { usePlayerAttribute } from "client/ui/hooks/use-player-attribute";
 import { usePopIn } from "client/ui/hooks/use-punch";
 import { EncounterAttribute } from "shared/features/encounter/encounter-attributes";

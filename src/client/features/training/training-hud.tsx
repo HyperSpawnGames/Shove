@@ -1,5 +1,5 @@
 import React from "@rbxts/react";
-import { formatNumber } from "client/ui/format-number";
+import { formatNumber } from "shared/format-number";
 import { usePlayerAttribute } from "client/ui/hooks/use-player-attribute";
 import { usePlayerField } from "client/ui/hooks/use-player-field";
 import { usePunch } from "client/ui/hooks/use-punch";

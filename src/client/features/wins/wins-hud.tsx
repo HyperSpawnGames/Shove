@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "@rbxts/react";
 import { TweenService } from "@rbxts/services";
-import { formatNumber } from "client/ui/format-number";
+import { formatNumber } from "shared/format-number";
 import { usePlayerField } from "client/ui/hooks/use-player-field";
 import { usePunch } from "client/ui/hooks/use-punch";
 

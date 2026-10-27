@@ -140,3 +140,28 @@ export function resistanceBetween(
 	const overlap = math.max(0, math.min(to, plan.endsAt) - math.max(from, plan.startsAt));
 	return steadyPerSecond * (to - from) + surgePerSecond * overlap;
 }
+
+/** A giant's own surge rhythm: any SurgeTiming field, plus the share of its push that surges. */
+export type SurgeOverrides = Partial<SurgeTiming> & { share?: number };
+
+/**
+ * The default rhythm with a giant's overrides applied field by field. The
+ * share stays within 0..1 and the gap range never inverts, whatever a
+ * roster entry says.
+ */
+export function styledSurge(
+	timing: SurgeTiming,
+	share: number,
+	overrides?: SurgeOverrides,
+): { timing: SurgeTiming; share: number } {
+	const minGap = math.max(overrides?.minGap ?? timing.minGap, 0);
+	return {
+		timing: {
+			minGap,
+			maxGap: math.max(overrides?.maxGap ?? timing.maxGap, minGap),
+			warning: math.max(overrides?.warning ?? timing.warning, 0),
+			duration: math.max(overrides?.duration ?? timing.duration, 0.05),
+		},
+		share: math.clamp(overrides?.share ?? share, 0, 1),
+	};
+}

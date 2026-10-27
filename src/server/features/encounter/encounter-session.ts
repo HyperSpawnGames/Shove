@@ -32,8 +32,10 @@ import {
 	ShoveBucket,
 	shoveGain,
 	splitResistance,
+	styledSurge,
 	strengthRatio,
 	SurgePlan,
+	SurgeTiming,
 	surgeState,
 	takeShove,
 } from "./encounter-rules";
@@ -53,6 +55,8 @@ interface Fight {
 	bucket: ShoveBucket;
 	/** The giant's next (or current) surge, and the clock of the last push applied. */
 	surge: SurgePlan;
+	/** This giant's surge rhythm: the defaults with its roster overrides. */
+	rhythm: { timing: SurgeTiming; share: number };
 	pushedUntil: number;
 	lastPublishedAt: number;
 	connections: RBXScriptConnection[];
@@ -120,6 +124,7 @@ export class EncounterSession extends BaseComponent<{}, Player> implements OnSta
 			struggleStartedAt: now,
 			bucket: fullShoveBucket(now, SHOVE_BURST),
 			surge: planSurge(now, SURGE_TIMING, 0),
+			rhythm: styledSurge(SURGE_TIMING, SURGE_SHARE, giant.surge),
 			pushedUntil: now,
 			lastPublishedAt: 0,
 			connections: [],
@@ -158,21 +163,18 @@ export class EncounterSession extends BaseComponent<{}, Player> implements OnSta
 		fight.phase = "Struggle";
 		fight.struggleStartedAt = now;
 		fight.bucket = fullShoveBucket(now, SHOVE_BURST);
-		fight.surge = planSurge(now + FIRST_SURGE_DELAY - SURGE_TIMING.minGap, SURGE_TIMING, math.random());
+		const { timing, share } = fight.rhythm;
+		fight.surge = planSurge(now + FIRST_SURGE_DELAY - timing.minGap, timing, math.random());
 		fight.pushedUntil = now;
 		this.publish(fight, true);
 
-		const { steadyPerSecond, surgePerSecond } = splitResistance(
-			fight.giant.resistancePerSecond,
-			SURGE_SHARE,
-			SURGE_TIMING,
-		);
+		const { steadyPerSecond, surgePerSecond } = splitResistance(fight.giant.resistancePerSecond, share, timing);
 		fight.connections.push(
 			RunService.Heartbeat.Connect(() => {
 				const clock = os.clock();
 				fight.meter -= resistanceBetween(fight.pushedUntil, clock, fight.surge, steadyPerSecond, surgePerSecond);
 				fight.pushedUntil = clock;
-				if (clock >= fight.surge.endsAt) fight.surge = planSurge(clock, SURGE_TIMING, math.random());
+				if (clock >= fight.surge.endsAt) fight.surge = planSurge(clock, timing, math.random());
 				this.settle(fight);
 			}),
 		);

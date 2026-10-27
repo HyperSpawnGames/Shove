@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "@rbxts/react";
 import { TweenService } from "@rbxts/services";
 import { Events } from "client/network";
-import { formatNumber } from "client/ui/format-number";
+import { formatNumber } from "shared/format-number";
 
 interface Popup {
 	id: number;
