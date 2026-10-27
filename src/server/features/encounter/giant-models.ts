@@ -1,17 +1,19 @@
-import { ServerStorage } from "@rbxts/services";
+import { CollectionService, ServerStorage } from "@rbxts/services";
+import { ANIMATION_SCALE_ATTRIBUTE, SCALED_GIANT_TAG } from "shared/features/encounter/giant-scale";
 import type { GiantDefinition } from "./giants";
 
 /** Roblox's default R15 idle: free to play in any game. */
 const IDLE_ANIMATION = "rbxassetid://507766666";
 /** The Humanoid's avatar-scaling values the prefabs keep at 1 for base scale. */
 const SCALE_VALUES = ["BodyWidthScale", "BodyHeightScale", "BodyDepthScale", "HeadScale"];
+/** The largest scale sized through the body-scale values; every garment still fits there. */
+const VALUES_PATH_MAX_SCALE = 2.5;
 
 /**
  * Sizes a giant through its Humanoid's body-scale values rather than
  * Model:ScaleTo. On this path the Animator moves joints by the scale, not its
  * square, so animation tracks play correctly; garments fit up to 2.5x but some
- * vanish from about 4x (docs/giant-scaling.md, sections 4.2 and 4.3). The
- * roster stays at 2.5x or below for that reason.
+ * vanish from about 4x (docs/giant-scaling.md, sections 4.2 and 4.3).
  */
 function scaleByValues(model: Model, scale: number): void {
 	const humanoid = model.FindFirstChildOfClass("Humanoid");
@@ -27,6 +29,24 @@ function scaleByValues(model: Model, scale: number): void {
 		}
 		(value as NumberValue).Value = scale;
 	}
+}
+
+/**
+ * Sizes a giant: up to 2.5x through the body-scale values; above, where those
+ * lose layered clothing, through Model:ScaleTo, which keeps every garment
+ * fitting but makes the Animator move joints by the scale squared. Such a
+ * giant is tagged, and each client divides its joint translations back down
+ * (GiantScaleController; docs/giant-scaling.md, sections 5 and 7). The server
+ * leaves its own joints uncorrected: nothing here reads a giant's posed parts.
+ */
+function scaleGiant(model: Model, scale: number): void {
+	if (scale <= VALUES_PATH_MAX_SCALE) {
+		scaleByValues(model, scale);
+		return;
+	}
+	model.ScaleTo(scale);
+	model.SetAttribute(ANIMATION_SCALE_ATTRIBUTE, scale);
+	CollectionService.AddTag(model, SCALED_GIANT_TAG);
 }
 
 /**
@@ -50,7 +70,7 @@ export function cloneGiant(giant: GiantDefinition, parent: Instance): Model | un
 	}
 	if (model.PrimaryPart) model.PrimaryPart.Anchored = true;
 	model.Parent = parent;
-	scaleByValues(model, giant.scale);
+	scaleGiant(model, giant.scale);
 	return model;
 }
 
