@@ -38,7 +38,8 @@
 		"push-a-giant:out/client/features/training/push-up-pose@PushUpPose": "client/features/training/push-up-pose@PushUpPose",
 		"push-a-giant:out/client/features/training/push-up-animator@PushUpAnimator": "client/features/training/push-up-animator@PushUpAnimator",
 		"push-a-giant:out/client/features/encounter/stepper@Stepper": "client/features/encounter/stepper@Stepper",
-		"push-a-giant:out/client/util/rig-poser@SpringPoser": "client/util/rig-poser@SpringPoser"
+		"push-a-giant:out/client/util/rig-poser@SpringPoser": "client/util/rig-poser@SpringPoser",
+		"push-a-giant:out/client/features/encounter/giant-scale-controller@GiantScaleController": "client/features/encounter/giant-scale-controller@GiantScaleController"
 	},
 	"metadata": {}
 }
