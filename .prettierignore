@@ -3,3 +3,5 @@ out
 include
 # Historical planning documents, frozen as written.
 docs/superpowers
+# Claude Code settings and agent worktrees, which hold their own copies of the repo.
+.claude
