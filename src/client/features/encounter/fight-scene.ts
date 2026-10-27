@@ -1,4 +1,5 @@
 import { RunService, Workspace } from "@rbxts/services";
+import { pauseAnimate } from "client/util/pause-animate";
 import { addPoses, mixPoses, RigPoser, scalePose, SpringPoser } from "client/util/rig-poser";
 import {
 	ARENA_GIANT_NAME,
@@ -77,6 +78,8 @@ export class FightScene {
 	private giantPoser?: SpringPoser;
 	/** Tracks this scene started on the player's own body, stopped when it ends. */
 	private playerTracks: AnimationTrack[] = [];
+	/** Gives the player's own idle and walk back when the fight ends. */
+	private resumeAnimate?: () => void;
 	/** Giant height over a player's, so its nudges and the camera scale with it. */
 	private giantScale = 1;
 	private cameraEye = Vector3.zero;
@@ -122,6 +125,8 @@ export class FightScene {
 		this.root = root;
 		this.shownMeter = this.serverMeter();
 		this.playerPoser = new SpringPoser(new RigPoser(character!));
+		// The avatar's own idle would bend the fight poses; the scene drives the body until it ends.
+		this.resumeAnimate = pauseAnimate(character!);
 		this.giantPoser = new SpringPoser(new RigPoser(giant));
 		this.giantScale = giant.GetExtentsSize().Y / BASE_HEIGHT;
 		this.giantSteps = new Stepper(STRIDE * this.giantScale, FULL_STEP_SPEED * this.giantScale);
@@ -172,6 +177,7 @@ export class FightScene {
 		this.stopped = true;
 		this.connection?.Disconnect();
 		this.playerPoser?.restore();
+		this.resumeAnimate?.();
 		for (const track of this.playerTracks) track.Stop(0.2);
 		this.playerTracks = [];
 

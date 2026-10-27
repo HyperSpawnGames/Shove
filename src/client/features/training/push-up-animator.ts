@@ -1,5 +1,6 @@
 import { Controller, OnStart } from "@flamework/core";
 import { Players, RunService } from "@rbxts/services";
+import { pauseAnimate } from "client/util/pause-animate";
 import { RigPoser } from "client/util/rig-poser";
 import { TrainingAttribute } from "shared/features/training/training-attributes";
 import { PushUpPose } from "./push-up-pose";
@@ -16,6 +17,8 @@ interface Body {
 	startedAt: number;
 	/** 0 standing, 1 in the plank. */
 	weight: number;
+	/** The local player's own idle, paused while the push-up drives the body. */
+	resumeAnimate?: () => void;
 }
 
 /**
@@ -23,7 +26,9 @@ interface Body {
  * from the Training attribute each Player carries: one rep per SecondsPerRep,
  * arms straight at the moment the server completes it. Code-driven, so it
  * stands in only while no push-up animation asset is set; an authored
- * animation replicates by itself.
+ * animation replicates by itself. The local player's own Animate pauses
+ * while their push-ups run, so an animation pack's idle cannot bend the pose;
+ * the tracks it stops stop for everyone watching.
  */
 @Controller({})
 export class PushUpAnimator implements OnStart {
@@ -59,25 +64,25 @@ export class PushUpAnimator implements OnStart {
 			return;
 		}
 
-		body?.pose.restore();
+		if (body) this.release(player, body);
 		const pose = PushUpPose.measure(character, new RigPoser(character));
 		if (pose === undefined) return;
-		this.bodies.set(player, { character, pose, training: true, startedAt: os.clock(), weight: 0 });
+		const resumeAnimate = player === Players.LocalPlayer ? pauseAnimate(character) : undefined;
+		this.bodies.set(player, { character, pose, training: true, startedAt: os.clock(), weight: 0, resumeAnimate });
 	}
 
 	private step(dt: number): void {
 		const now = os.clock();
 		for (const [player, body] of this.bodies) {
 			if (body.character.Parent === undefined || player.Character !== body.character) {
-				this.bodies.delete(player);
+				this.release(player, body);
 				continue;
 			}
 
 			const step = dt / GET_DOWN_SECONDS;
 			body.weight = body.training ? math.min(body.weight + step, 1) : math.max(body.weight - step, 0);
 			if (body.weight <= 0 && !body.training) {
-				body.pose.restore();
-				this.bodies.delete(player);
+				this.release(player, body);
 				continue;
 			}
 
@@ -87,5 +92,12 @@ export class PushUpAnimator implements OnStart {
 			const depth = body.training ? 0.5 - 0.5 * math.cos(((now - body.startedAt) / period) * 2 * math.pi) : 0;
 			body.pose.apply(depth, body.weight);
 		}
+	}
+
+	/** Stands the body back up and gives the local player their own idle back. */
+	private release(player: Player, body: Body): void {
+		body.pose.restore();
+		body.resumeAnimate?.();
+		this.bodies.delete(player);
 	}
 }

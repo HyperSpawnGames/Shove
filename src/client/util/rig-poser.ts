@@ -1,6 +1,6 @@
 import { SpringTuning, stepSpring } from "./spring";
 
-/** The R15 joints a pose can bend, each named after its Motor6D. */
+/** The R15 joints a pose can bend, each named after its Motor6D or AnimationConstraint. */
 export type JointName =
 	| "Root"
 	| "Waist"
@@ -18,7 +18,7 @@ export type JointName =
 	| "LeftAnkle"
 	| "RightAnkle";
 
-/** The part each joint's Motor6D lives in (its Part1). */
+/** The part each joint lives in (its Part1). */
 const JOINT_PARTS: Record<JointName, string> = {
 	Root: "LowerTorso",
 	Waist: "UpperTorso",
@@ -81,8 +81,48 @@ export function scalePose(pose: Pose, weight: number): Pose {
 }
 
 /**
+ * One animated joint of a rig, whichever kind it is. Rigs built from parts,
+ * like the giant prefabs, use Motor6Ds; avatars the engine builds, every
+ * player character among them, use AnimationConstraints, which keep their C0
+ * and C1 in their two attachments. Both place Part1 at
+ * Part0 · C0 · Transform · C1⁻¹, so posing either is rotating its C0.
+ */
+export interface RigJoint {
+	readonly getC0: () => CFrame;
+	readonly setC0: (c0: CFrame) => void;
+	readonly getC1: () => CFrame;
+	/** Whether the joint is still in the rig (a body can be destroyed under a poser). */
+	readonly isAlive: () => boolean;
+}
+
+/** The joint named `jointName` in `partName`, a Motor6D or an AnimationConstraint. */
+export function findJoint(rig: Model, partName: string, jointName: string): RigJoint | undefined {
+	const found = rig.FindFirstChild(partName)?.FindFirstChild(jointName);
+	if (found?.IsA("Motor6D")) {
+		return {
+			getC0: () => found.C0,
+			setC0: (c0) => (found.C0 = c0),
+			getC1: () => found.C1,
+			isAlive: () => found.Parent !== undefined,
+		};
+	}
+	if (found?.IsA("AnimationConstraint")) {
+		const a0 = found.Attachment0;
+		const a1 = found.Attachment1;
+		if (a0 === undefined || a1 === undefined) return undefined;
+		return {
+			getC0: () => a0.CFrame,
+			setC0: (c0) => (a0.CFrame = c0),
+			getC1: () => a1.CFrame,
+			isAlive: () => found.Parent !== undefined && a0.Parent !== undefined,
+		};
+	}
+	return undefined;
+}
+
+/**
  * Bends a rig's joints from code, on this client only, by rotating each
- * Motor6D's C0 from the value it had when the poser was made. Rotations only
+ * joint's C0 from the value it had when the poser was made. Rotations only
  * (plus an optional Root shift), so it poses a rig of any size, and it layers
  * under any animation track: the Animator writes each joint's Transform, on
  * top of the C0 set here.
@@ -90,12 +130,12 @@ export function scalePose(pose: Pose, weight: number): Pose {
  * restore() puts the rig back exactly as it was.
  */
 export class RigPoser {
-	private readonly joints = new Map<JointName, { motor: Motor6D; rest: CFrame }>();
+	private readonly joints = new Map<JointName, { joint: RigJoint; rest: CFrame }>();
 
 	constructor(public readonly rig: Model) {
-		for (const [joint, partName] of pairs(JOINT_PARTS)) {
-			const motor = rig.FindFirstChild(partName)?.FindFirstChild(joint);
-			if (motor?.IsA("Motor6D")) this.joints.set(joint, { motor, rest: motor.C0 });
+		for (const [name, partName] of pairs(JOINT_PARTS)) {
+			const joint = findJoint(rig, partName, name);
+			if (joint) this.joints.set(name, { joint, rest: joint.getC0() });
 		}
 	}
 
@@ -104,28 +144,24 @@ export class RigPoser {
 		return this.joints.has("Root") && this.joints.has("Waist");
 	}
 
-	public getMotor(joint: JointName): Motor6D | undefined {
-		return this.joints.get(joint)?.motor;
-	}
-
 	/** Sets every joint: those in `pose` to their angles, the rest back to rest. */
 	public apply(pose: Pose, shift?: PoseShift): void {
-		for (const [joint, { motor, rest }] of this.joints) {
-			const angles = pose[joint];
-			const offset = shift?.[joint];
+		for (const [name, { joint, rest }] of this.joints) {
+			const angles = pose[name];
+			const offset = shift?.[name];
 			let c0 = rest;
 			if (offset !== undefined) c0 = new CFrame(offset).mul(c0);
 			if (angles !== undefined) {
 				c0 = c0.mul(CFrame.Angles(math.rad(angles.X), math.rad(angles.Y), math.rad(angles.Z)));
 			}
-			motor.C0 = c0;
+			joint.setC0(c0);
 		}
 	}
 
 	/** Puts every joint back where it was when the poser was made. */
 	public restore(): void {
-		for (const [, { motor, rest }] of this.joints) {
-			if (motor.Parent !== undefined) motor.C0 = rest;
+		for (const [, { joint, rest }] of this.joints) {
+			if (joint.isAlive()) joint.setC0(rest);
 		}
 	}
 }

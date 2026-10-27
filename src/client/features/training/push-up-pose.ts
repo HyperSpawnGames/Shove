@@ -1,4 +1,4 @@
-import { deg, Pose, RigPoser } from "client/util/rig-poser";
+import { deg, findJoint, Pose, RigJoint, RigPoser } from "client/util/rig-poser";
 
 /** Elbow bend at the bottom of a rep, in degrees. */
 const BOTTOM_BEND = 80;
@@ -14,14 +14,9 @@ interface Sample {
 	drop: number;
 }
 
-function motor(rig: Model, part: string, name: string): Motor6D | undefined {
-	const found = rig.FindFirstChild(part)?.FindFirstChild(name);
-	return found?.IsA("Motor6D") ? found : undefined;
-}
-
 /** A joint's Part0-to-Part1 offset with no animation applied. */
-function link(joint: Motor6D): CFrame {
-	return joint.C0.mul(joint.C1.Inverse());
+function link(joint: RigJoint): CFrame {
+	return joint.getC0().mul(joint.getC1().Inverse());
 }
 
 /**
@@ -47,14 +42,14 @@ export class PushUpPose {
 		const humanoid = character.FindFirstChildOfClass("Humanoid");
 		const root = humanoid?.RootPart;
 		const joints = {
-			root: motor(character, "LowerTorso", "Root"),
-			waist: motor(character, "UpperTorso", "Waist"),
-			shoulder: motor(character, "RightUpperArm", "RightShoulder"),
-			elbow: motor(character, "RightLowerArm", "RightElbow"),
-			wrist: motor(character, "RightHand", "RightWrist"),
-			hip: motor(character, "RightUpperLeg", "RightHip"),
-			knee: motor(character, "RightLowerLeg", "RightKnee"),
-			ankle: motor(character, "RightFoot", "RightAnkle"),
+			root: findJoint(character, "LowerTorso", "Root"),
+			waist: findJoint(character, "UpperTorso", "Waist"),
+			shoulder: findJoint(character, "RightUpperArm", "RightShoulder"),
+			elbow: findJoint(character, "RightLowerArm", "RightElbow"),
+			wrist: findJoint(character, "RightHand", "RightWrist"),
+			hip: findJoint(character, "RightUpperLeg", "RightHip"),
+			knee: findJoint(character, "RightLowerLeg", "RightKnee"),
+			ankle: findJoint(character, "RightFoot", "RightAnkle"),
 		};
 		const hand = character.FindFirstChild("RightHand");
 		const foot = character.FindFirstChild("RightFoot");
@@ -65,9 +60,9 @@ export class PushUpPose {
 
 		// Everything below is in the LowerTorso's frame at rest.
 		const upperTorso = link(joints.waist!);
-		const shoulderAt = upperTorso.mul(joints.shoulder!.C0).Position;
+		const shoulderAt = upperTorso.mul(joints.shoulder!.getC0()).Position;
 		const upperArm = upperTorso.mul(link(joints.shoulder!));
-		const elbowAt = upperArm.mul(joints.elbow!.C0).Position;
+		const elbowAt = upperArm.mul(joints.elbow!.getC0()).Position;
 		const lowerArm = upperArm.mul(link(joints.elbow!));
 		const handBottom = lowerArm.mul(link(joints.wrist!)).mul(new Vector3(0, -hand.Size.Y / 2, 0));
 		// The toe's bottom edge: tilted into a plank, the foot rests on it.
@@ -75,7 +70,7 @@ export class PushUpPose {
 			.mul(link(joints.knee!))
 			.mul(link(joints.ankle!))
 			.mul(new Vector3(0, -foot.Size.Y / 2, -foot.Size.Z / 2));
-		const pivot = joints.root!.C1.Position;
+		const pivot = joints.root!.getC1().Position;
 
 		const upperLength = elbowAt.sub(shoulderAt).Magnitude;
 		const foreLength = handBottom.sub(elbowAt).Magnitude;
@@ -83,7 +78,7 @@ export class PushUpPose {
 		const feet = footBottom.sub(pivot);
 		// The floor and the Root joint, in the root part's frame.
 		const floorY = -(humanoid.HipHeight + root.Size.Y / 2);
-		const pivotY = joints.root!.C0.Position.Y;
+		const pivotY = joints.root!.getC0().Position.Y;
 
 		/** Height of a point (relative to the pivot) once the body tilts forward by `tilt` radians. */
 		const heightAfterTilt = (point: Vector3, tilt: number) => point.Y * math.cos(tilt) + point.Z * math.sin(tilt);
