@@ -89,10 +89,38 @@ export function startIdle(model: Model): void {
 	track.Play();
 }
 
-/** Pivots a model to `floor`, then lifts or lowers it until its lowest point touches the floor's height. */
+/** The lowest point of a part's box, wherever it is turned. */
+function lowestPoint(part: BasePart): number {
+	const half = part.Size.div(2);
+	let lowest = math.huge;
+	for (const x of [-1, 1]) {
+		for (const y of [-1, 1]) {
+			for (const z of [-1, 1]) {
+				lowest = math.min(lowest, part.CFrame.PointToWorldSpace(half.mul(new Vector3(x, y, z))).Y);
+			}
+		}
+	}
+	return lowest;
+}
+
+/**
+ * Where a model touches the ground: the lower of its feet, or, for a model
+ * without them, its lowest point. Feet first, so a weapon or cape that hangs
+ * below them cannot lift the body off the floor.
+ */
+function groundHeight(model: Model): number {
+	let feet = math.huge;
+	for (const name of ["LeftFoot", "RightFoot"]) {
+		const foot = model.FindFirstChild(name);
+		if (foot?.IsA("BasePart")) feet = math.min(feet, lowestPoint(foot));
+	}
+	if (feet < math.huge) return feet;
+	const [box, size] = model.GetBoundingBox();
+	return box.Position.Y - size.Y / 2;
+}
+
+/** Pivots a model to `floor`, then lifts or lowers it until its feet touch the floor's height. */
 export function placeOnFloor(model: Model, floor: CFrame): void {
 	model.PivotTo(floor);
-	const [box, size] = model.GetBoundingBox();
-	const bottom = box.Position.Y - size.Y / 2;
-	model.PivotTo(floor.add(new Vector3(0, floor.Position.Y - bottom, 0)));
+	model.PivotTo(floor.add(new Vector3(0, floor.Position.Y - groundHeight(model), 0)));
 }
