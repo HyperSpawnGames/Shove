@@ -4,6 +4,7 @@ import { Workspace } from "@rbxts/services";
 import { Events } from "server/network";
 import { STAIRCASE_FOLDER } from "shared/features/encounter/encounter-attributes";
 import { EncounterSession } from "./encounter-session";
+import { registerGateGroups } from "./gate-collision";
 import { GIANTS, QUADS } from "./giants";
 import { buildGiant, buildRamp, buildTerrace, giantClearZone, laneClearZone } from "./staircase";
 import { Footprint, gateOpensAt, giantFootprint, layoutTerraces, planSlots, SPACER_FOOTPRINT } from "./world-layout";
@@ -22,6 +23,7 @@ export class EncounterService implements OnStart {
 	constructor(private readonly components: Components) {}
 
 	onStart(): void {
+		registerGateGroups();
 		const folder = new Instance("Folder");
 		folder.Name = STAIRCASE_FOLDER;
 		folder.Parent = Workspace;

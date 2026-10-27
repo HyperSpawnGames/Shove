@@ -5,6 +5,7 @@ import {
 	STAIRCASE_LOCK_TAG,
 } from "shared/features/encounter/encounter-attributes";
 import { formatNumber } from "shared/format-number";
+import { GATE_GROUP } from "./gate-collision";
 import { cloneGiant, placeOnFloor, startIdle } from "./giant-models";
 import type { GiantDefinition } from "./giants";
 import { RampLayout, rampBetween, TerraceLayout } from "./world-layout";
@@ -121,6 +122,7 @@ export function buildRamp(
 		Enum.Material.ForceField,
 	);
 	wall.Transparency = 0.2;
+	wall.CollisionGroup = GATE_GROUP;
 	label(
 		wall,
 		`Defeat the ${gate.beat.displayName} to open`,

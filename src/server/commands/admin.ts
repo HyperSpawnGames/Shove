@@ -1,15 +1,18 @@
 import { Components } from "@flamework/components";
 import { Dependency } from "@flamework/core";
 import { Centurion, CenturionType, Command, CommandContext, CommandGuard, Guard, Register } from "@rbxts/centurion";
-import { RunService } from "@rbxts/services";
+import { RunService, StarterPlayer } from "@rbxts/services";
 import { CoinsWallet } from "server/features/coins/coins-wallet";
 import { ArenaProgress } from "server/features/encounter/arena-progress";
+import { GateGhost } from "server/features/encounter/gate-ghost";
 import { StrengthStat } from "server/features/training/strength-stat";
 import { WinsWallet } from "server/features/wins/wins-wallet";
 import { PlayerCharacter } from "server/services/player/player-character";
 import { PlayerDataNode } from "server/services/player/player-data-node";
 
 const ADMIN_IDS = new Set<number>([418255008]);
+/** superwalk's speed, as a multiple of the default walk speed. */
+const SUPERWALK_SPEED_FACTOR = 10;
 
 const isAdmin: CommandGuard = (ctx) => {
 	if (!RunService.IsStudio() && !ADMIN_IDS.has(ctx.executor.UserId)) {
@@ -166,6 +169,40 @@ class AdminCommands {
 
 		progress.recordWin(count - 1);
 		ctx.reply(`${player.Name} has cleared ${progress.getHighestCleared()} giants`);
+	}
+
+	// encounter feature — remove alongside the encounter folders.
+	@Command({
+		name: "superwalk",
+		description: "Toggle 10x walk speed and walking through staircase gate walls; stays on through respawns",
+		arguments: [
+			{ name: "player", description: "The target player", type: CenturionType.Player },
+			{
+				name: "enabled",
+				description: "true or false; omit to toggle",
+				type: CenturionType.Boolean,
+				optional: true,
+			},
+		],
+	})
+	superWalk(ctx: CommandContext, player: Player, enabled?: boolean) {
+		const components = Dependency<Components>();
+		const character = components.getComponent<PlayerCharacter>(player);
+		const ghost = components.getComponent<GateGhost>(player);
+
+		if (!character || !ghost) {
+			ctx.error(`Player data not loaded for ${player.Name}`);
+			return;
+		}
+
+		const on = enabled ?? !ghost.isGhost();
+		ghost.setGhost(on);
+		character.setWalkSpeed(on ? StarterPlayer.CharacterWalkSpeed * SUPERWALK_SPEED_FACTOR : undefined);
+		ctx.reply(
+			on
+				? `${player.Name} superwalks: ${character.getWalkSpeed()} studs/s, through gate walls`
+				: `${player.Name} walks normally again (${character.getWalkSpeed()} studs/s)`,
+		);
 	}
 
 	// wins feature — remove alongside the wins folders.
