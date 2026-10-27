@@ -25,8 +25,12 @@ type AnimatedJoint = Motor6D | AnimationConstraint;
 
 interface ScaledGiant {
 	scale: number;
-	/** Each joint and the Transform last written to it, to tell an Animator write from our own. */
-	joints: Map<AnimatedJoint, CFrame | undefined>;
+	/**
+	 * Each joint and the Transform last written to it, to tell an Animator write
+	 * from our own; false until the first write. Never undefined: in Luau a nil
+	 * value deletes the key, which would leave the table empty.
+	 */
+	joints: Map<AnimatedJoint, CFrame | false>;
 	connections: RBXScriptConnection[];
 }
 
@@ -166,13 +170,13 @@ export class GiantScaleController implements OnStart {
 
 		const giant: ScaledGiant = { scale, joints: new Map(), connections: [] };
 		for (const descendant of instance.GetDescendants()) {
-			if (isAnimatedJoint(descendant)) giant.joints.set(descendant, undefined);
+			if (isAnimatedJoint(descendant)) giant.joints.set(descendant, false);
 		}
 		// Parts can stream in after the model does, bringing their joints with them.
 		giant.connections.push(
 			instance.DescendantAdded.Connect((descendant) => {
 				if (!isAnimatedJoint(descendant)) return;
-				giant.joints.set(descendant, undefined);
+				giant.joints.set(descendant, false);
 				this.tryProbe(instance, giant);
 			}),
 			instance.DescendantRemoving.Connect((descendant) => {
@@ -200,7 +204,7 @@ export class GiantScaleController implements OnStart {
 			for (const [joint, written] of giant.joints) {
 				const transform = joint.Transform;
 				// Unchanged since our last write: the Animator skipped this joint this frame.
-				if (written !== undefined && transform.FuzzyEq(written, 1e-6)) continue;
+				if (written !== false && transform.FuzzyEq(written, 1e-6)) continue;
 				const corrected = correctedTransform(transform, giant.scale);
 				joint.Transform = corrected;
 				giant.joints.set(joint, corrected);
