@@ -49,6 +49,13 @@ function addEffect(part: Part, effect: PartSpec["effect"]): void {
 		emitter.Color = new ColorSequence(Color3.fromRGB(96, 140, 60), Color3.fromRGB(150, 120, 60));
 		emitter.LightEmission = 0;
 		emitter.Size = new NumberSequence(0.5);
+		// Fade in and out, and stay a little see-through, so leaves drift rather than pop.
+		emitter.Transparency = new NumberSequence([
+			new NumberSequenceKeypoint(0, 1),
+			new NumberSequenceKeypoint(0.15, 0.35),
+			new NumberSequenceKeypoint(0.85, 0.35),
+			new NumberSequenceKeypoint(1, 1),
+		]);
 		emitter.Squash = new NumberSequence(0.6);
 		emitter.Rate = 1.5;
 		emitter.Lifetime = new NumberRange(6, 9);
