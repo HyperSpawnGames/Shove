@@ -64,9 +64,14 @@ end
 	             live entirely in its textures).
 	clothing     Classic Shirt / Pants: false removes it, a hex tints it.
 	remove       Accessories (by name) to drop from the base.
-	tint         Accessory name -> { hex, glow? }. Tints a SpecialMesh through
-	             VertexColor (glow > 1 brightens it), a layered garment through its
-	             SurfaceAppearance.Color, anything else through Color.
+	tint         Accessory name -> { hex, glow?, strip?, material?, base?, offset? }. Tints a
+	             SpecialMesh through VertexColor (glow > 1 brightens it), a layered garment
+	             through its SurfaceAppearance.Color, anything else through Color. A tint
+	             only multiplies a texture, so where the colour is baked in, `strip = true`
+	             drops the texture and paints the handle the hex instead. `base` sets the
+	             handle Color under an Overlay SurfaceAppearance (what its transparent
+	             areas show). `offset` moves the handle, in studs in its body attachment's
+	             frame, after scaling.
 	scale        Accessory name -> uniform scale. Default: the mean multiplier of the body
 	             part it hangs on; layered clothing never scales.
 	transplant   Accessories copied from other prefabs: { from, name, as?, tint?, scale? }.
@@ -76,7 +81,8 @@ end
 	             the (reshaped) part's size from its centre, `offset` is in studs after
 	             that, `rot` is degrees (CFrame.Angles order). `fromEnd = "X" | "Y"` grows
 	             the part out of that point along its own axis instead of centring it,
-	             and `tip` puts a second accent on the far end.
+	             and `tip` puts a second accent on the far end (with its own `rot` and
+             `fromEnd` it grows on from there, e.g. a horn that curves).
 	lights       PointLights: { part, color, range, brightness }.
 ]]
 local VARIANTS = {
@@ -189,7 +195,7 @@ local VARIANTS = {
 		quad = 5,
 		theme = "Frost",
 		rosterIndex = 20,
-		look = "Broad: the Ice King's frame widened into a white fur (Fabric) body under ice-blue Paladin armour and ice-blue heavy pauldrons, a white fur beard and a pale horned beast mask as the horned helm; crown and face mask removed.",
+		look = "Broad: the Ice King's frame widened into a white fur (Fabric) body under ice-blue Paladin armour (its see-through areas white), oversized solid ice-blue pauldrons pushed out past the armour's shoulders, a horned helm built from Parts (frosted ice dome, ice-blue brow band, ivory horns curving up to ice tips) that leaves the lower face open, and a white beard and mane; crown and face mask removed.",
 		proportions = {
 			Head = 1.1,
 			UpperTorso = v(1.4, 1.1, 1.3),
@@ -200,23 +206,45 @@ local VARIANTS = {
 			Feet = v(1.35, 1.1, 1.4),
 		},
 		palette = {
-			Head = { "#E6EEF5", "Fabric" },
-			Torso = { "#EEF3F7", "Fabric" },
-			Arms = { "#EEF3F7", "Fabric" },
-			Legs = { "#EEF3F7", "Fabric" },
-			Hands = { "#C8D7E6", "Fabric" },
-			Feet = { "#C8D7E6", "Fabric" },
+			Head = { "#EEF3F8", "Fabric" },
+			Torso = { "#F4F8FB", "Fabric" },
+			Arms = { "#F4F8FB", "Fabric" },
+			Legs = { "#F4F8FB", "Fabric" },
+			Hands = { "#DCE8F2", "Fabric" },
+			Feet = { "#DCE8F2", "Fabric" },
 		},
 		remove = { "Ice Crown", "LunarDivineMaskAccessory1.0" },
 		tint = {
-			Paladin = { "#8CC8FF" },
-			["Cultivator's Hair"] = { "#FFFFFF", 1.15 },
+			-- base: the Paladin's colour map is Overlay; its see-through areas (arms, legs)
+			-- showed the handle's default grey. White makes them read as fur.
+			Paladin = { "#8CC8FF", base = "#F4F8FB" },
+			["Cultivator's Hair"] = { "#F4F8FB", strip = true, material = "Fabric" },
 		},
 		transplant = {
-			{ from = "FireTroll", name = "Horned Mask of Boarbanzu", as = "Yeti Horned Helm", tint = { "#D2E6FF", 1.2 } },
-			{ from = "Viking", name = "Swashbucklin Beard", as = "Yeti Beard", tint = { "#FFFFFF", 1.4 } },
-			{ from = "Viking", name = "Clean Heavy Warrior Left Pauldron", as = "Frost Pauldron Left", tint = { "#9AD2FF", 1.1 } },
-			{ from = "Viking", name = "Clean Heavy Warrior Right Pauldron", as = "Frost Pauldron Right", tint = { "#9AD2FF", 1.1 } },
+			-- Colour baked into textures (the beard was brown, the pauldrons leather and
+			-- plate), so both are stripped and recoloured.
+			{ from = "Viking", name = "Swashbucklin Beard", as = "Yeti Beard", tint = { "#F4F8FB", strip = true, material = "Fabric", offset = v(0, -0.05, -0.12) }, scale = 1.2 },
+			{ from = "Viking", name = "Clean Heavy Warrior Left Pauldron", as = "Frost Pauldron Left", tint = { "#7EC2FF", strip = true, material = "Metal", offset = v(-0.4, 0.25, 0) }, scale = 1.55 },
+			{ from = "Viking", name = "Clean Heavy Warrior Right Pauldron", as = "Frost Pauldron Right", tint = { "#7EC2FF", strip = true, material = "Metal", offset = v(0.4, 0.25, 0) }, scale = 1.55 },
+		},
+		build = {
+			-- Horned helm: frosted dome over the crown, ice-blue brow band, and on each side
+			-- an ivory horn that runs out sideways and curves up into an ice tip. The face
+			-- below the band stays open so the beard shows.
+			{ name = "HelmDome", part = "Head", attach = "HatAttachment", shape = "Ball", size = v(1.38), at = v(0, 0.34, 0.02), color = "#E6F3FF", material = "Ice" },
+			{ name = "HelmBand", part = "Head", attach = "HatAttachment", shape = "Cylinder", size = v(0.34, 1.36, 1.36), at = v(0, 0.1, 0), rot = v(0, 0, 90), color = "#8CC8FF", material = "Metal" },
+			{
+				name = "HelmHornLeft", part = "Head", attach = "HatAttachment", shape = "Cylinder",
+				size = v(0.8, 0.34, 0.34), at = v(-0.45, 0.18, 0), rot = v(0, 0, 168), fromEnd = "X",
+				color = "#F2F0E6", material = "SmoothPlastic",
+				tip = { shape = "Cylinder", size = v(0.85, 0.26, 0.26), rot = v(0, 0, 112), fromEnd = "X", color = "#BFE6FF", material = "Ice" },
+			},
+			{
+				name = "HelmHornRight", part = "Head", attach = "HatAttachment", shape = "Cylinder",
+				size = v(0.8, 0.34, 0.34), at = v(0.45, 0.18, 0), rot = v(0, 0, 12), fromEnd = "X",
+				color = "#F2F0E6", material = "SmoothPlastic",
+				tip = { shape = "Cylinder", size = v(0.85, 0.26, 0.26), rot = v(0, 0, 68), fromEnd = "X", color = "#BFE6FF", material = "Ice" },
+			},
 		},
 	},
 	{
@@ -602,6 +630,28 @@ local function tintAccessory(id: string, accessory, spec)
 	local handle = handleOf(accessory)
 	local mesh = handle:FindFirstChildOfClass("SpecialMesh")
 	local surface = handle:FindFirstChildOfClass("SurfaceAppearance")
+	if spec.material then
+		handle.Material = material(id, spec.material)
+	end
+	if spec.base then
+		-- A SurfaceAppearance in Overlay mode shows the handle's Color wherever its colour
+		-- map is transparent (the grey that showed through as dark arms on the Paladin).
+		handle.Color = hex(spec.base)
+	end
+	if spec.strip then
+		-- The colour lives in the texture, which a tint only multiplies: drop the texture
+		-- and the mesh draws in the handle's Color.
+		if mesh then
+			mesh.TextureContent = Content.none
+			mesh.VertexColor = v(glow)
+		elseif handle:IsA("MeshPart") and not surface then
+			handle.TextureContent = Content.none
+		else
+			fail(id, `{accessory.Name}: strip needs a SpecialMesh or an untextured-surface MeshPart`)
+		end
+		handle.Color = color
+		return
+	end
 	if mesh then
 		mesh.VertexColor = Vector3.new(color.R * glow, color.G * glow, color.B * glow)
 	elseif surface then
@@ -716,8 +766,21 @@ local function buildAccent(id: string, model, spec)
 	partSpec.size = size
 	addAccent(id, model, spec.name, spec.part, spec.attach, partSpec, base * CFrame.new(along))
 	if spec.tip then
+		-- The tip starts at the far end; with its own `rot` (part space, degrees) and
+		-- `fromEnd` it grows on from there as a second segment (a curving horn).
 		local tipSpec = table.clone(spec.tip)
-		addAccent(id, model, spec.name .. "Tip", spec.part, spec.attach, tipSpec, base * CFrame.new(along * 2))
+		local tipEnd = (base * CFrame.new(along * 2)).Position
+		local tipRot = tipSpec.rot
+		local tipPlacement = base * CFrame.new(along * 2)
+		if tipRot then
+			tipPlacement = CFrame.new(tipEnd) * CFrame.Angles(math.rad(tipRot.X), math.rad(tipRot.Y), math.rad(tipRot.Z))
+		end
+		if tipSpec.fromEnd == "X" then
+			tipPlacement *= CFrame.new(tipSpec.size.X / 2, 0, 0)
+		elseif tipSpec.fromEnd == "Y" then
+			tipPlacement *= CFrame.new(0, tipSpec.size.Y / 2, 0)
+		end
+		addAccent(id, model, spec.name .. "Tip", spec.part, spec.attach, tipSpec, tipPlacement)
 	end
 end
 
@@ -875,6 +938,22 @@ local function derive(variant, prefabs)
 			s = (m.X + m.Y + m.Z) / 3
 		end
 		scaleHandle(handleOf(accessory), s)
+	end
+	-- Tint `offset`: move a handle (studs, in its body attachment's frame) after scaling,
+	-- e.g. to push pauldrons out past a garment's own shoulder plates.
+	for name, spec in tints do
+		if spec.offset then
+			local accessory = model[name]
+			local _, handleAtt = accessoryPair(model, accessory)
+			-- handle = body * bodyAtt * handleAtt^-1; moving by d in bodyAtt's frame
+			-- means handleAtt' = handleAtt * CFrame.new(-d).
+			local before = handleAtt.CFrame.Position
+			handleAtt.CFrame = handleAtt.CFrame * CFrame.new(-spec.offset)
+			local original = handleAtt:FindFirstChild("OriginalPosition")
+			if original and original:IsA("Vector3Value") then
+				original.Value += handleAtt.CFrame.Position - before
+			end
+		end
 	end
 
 	-- Joints from the (moved) rig attachments, then the rest pose and every weld.
