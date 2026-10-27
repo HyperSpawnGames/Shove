@@ -1,3 +1,4 @@
+import { tierTuning } from "./tuning";
 import type { QuadDefinition } from "./types";
 
 /**
@@ -31,6 +32,14 @@ export const QUAD_1: QuadDefinition = {
 			recommendedStrength: 500,
 			resistancePerSecond: 0.04,
 			winsPayout: 75,
+		},
+		{
+			modelId: "Baron",
+			displayName: "Baron",
+			...tierTuning(3),
+			// The quad's boss: slower, heavier surges than the defaults, so the first
+			// quad ends on a fight that feels different.
+			surge: { minGap: 2.6, maxGap: 4, warning: 0.9, duration: 0.5, share: 0.8 },
 		},
 	],
 };
