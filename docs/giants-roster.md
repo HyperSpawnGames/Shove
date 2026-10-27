@@ -53,14 +53,14 @@ _Zone_ is the staircase quad and _RosterIndex_ the 1-based place on the staircas
 | --------------- | -------------- | ------ | -------------- | ----------- | ----------- | --------------- |
 | `MosslingScout` | Mossling Scout | 5.2    | 3 (Forest)     | 9           | 5           | `LeafNinja`     |
 | `AncientTreant` | Ancient Treant | 5.8    | 3 (Forest)     | 12          | 19          | `ForestTroll`   |
-| `YetiWarlord`   | Yeti Warlord   | 5.9    | 5 (Frost)      | 20          | 7           | `IceKing`       |
+| `YetiWarlord`   | Yeti Warlord   | 5.9    | 5 (Frost)      | 20          | 12          | `IceKing`       |
 | `VoidTyrant`    | Void Tyrant    | 6.7    | 6 (Chaos)      | 24          | 13          | `ChaosSummoner` |
 | `MagmaBrute`    | Magma Brute    | 5.6    | 7 (Volcanic)   | 27          | 12          | `RedOrc`        |
 | `IronChampion`  | Iron Champion  | 6.3    | 8 (Neon Arena) | 31          | 5           | `BuffNoob`      |
 
 - **Mossling Scout** (`MosslingScout`): Small and quick: a slighter Leaf Ninja with a big head, moss-grass skin, bark hands and feet, moss-tinted jacket over bark-brown pants, a mossy tuft of hair and a short blade.
 - **Ancient Treant** (`AncientTreant`): Hulking: the Forest Troll widened and thickened into dark bark (Wood), tiger stripes darkened into bark grooves, a vine-green rope wrap, a crown of leaf balls and two branches growing out of each shoulder with leafy tips.
-- **Yeti Warlord** (`YetiWarlord`): Broad: the Ice King's frame widened into a white fur (Fabric) body under ice-blue Paladin armour and ice-blue heavy pauldrons, a white fur beard and a pale horned beast mask as the horned helm; crown and face mask removed.
+- **Yeti Warlord** (`YetiWarlord`): Broad: the Ice King's frame widened into a white fur (Fabric) body under ice-blue Paladin armour (its see-through areas white), oversized solid ice-blue pauldrons pushed out past the armour's shoulders, a horned helm built from Parts (frosted ice dome, ice-blue brow band, ivory horns curving up to ice tips) that leaves the lower face open, and a white beard and mane; crown and face mask removed.
 - **Void Tyrant** (`VoidTyrant`): Towering: the Chaos Summoner stretched tall (longer legs, arms and torso) in void black and deep violet, a violet-tinted Ice Crown, glowing neon-violet hands, a neon core on the chest, three neon spines fanning from the back and a violet light.
 - **Magma Brute** (`MagmaBrute`): Heavy: the Red Orc thickened everywhere with big fists, a charcoal CrackedLava body (glowing lava-orange cracks), charcoal-iron pauldrons and chest plate, the red mohawk tinted into a flame crest, the cyclops eye kept glowing, basalt spines with neon lava tips on the back and an orange light.
 - **Iron Champion** (`IronChampion`): Champion boxer: Buffnoob's muscle body with its textures stripped and plated in steel (DiamondPlate chest, Metal limbs), navy trunks, oversized red gloves, the Knight's steel pauldrons, and a gold title belt with a big gold front plate and a neon-cyan gem.
