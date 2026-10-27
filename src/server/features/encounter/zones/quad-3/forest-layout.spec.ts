@@ -93,8 +93,18 @@ describe("planForest", () => {
 					const terrace = entry.terrace;
 					expect(box.min.X >= -terrace.width / 2 && box.max.X <= terrace.width / 2).toBe(true);
 					expect(box.min.Z >= terrace.backZ && box.max.Z <= terrace.frontZ).toBe(true);
-					expect(math.abs(box.min.Y - terrace.floorY)).toBeLessThan(2);
 				});
+				// Each prop rests on the floor by its lowest part; parts may sit on the
+				// prop itself, as the moss does on a fallen log.
+				for (const entry of plan) {
+					for (const prop of entry.props) {
+						let lowest = math.huge;
+						for (const part of prop.parts) {
+							if (!part.overhead) lowest = math.min(lowest, worldBounds(part.cframe, part.size).min.Y);
+						}
+						if (lowest < math.huge) expect(math.abs(lowest - entry.terrace.floorY)).toBeLessThan(2);
+					}
+				}
 			});
 
 			it("grows at least three tall trees on every terrace", () => {
