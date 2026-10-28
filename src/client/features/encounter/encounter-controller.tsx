@@ -9,6 +9,8 @@ import { SHOVES_PER_SECOND } from "./encounter-config";
 import { EncounterHud } from "./encounter-hud";
 import { FightScene } from "./fight-scene";
 
+const ENCOUNTER_HUD = "EncounterHud";
+
 /**
  * The client half of a giant fight: mounts the fight HUD, sends shoves at no
  * more than the server's cap, and runs a FightScene while the server reports
@@ -25,7 +27,7 @@ export class EncounterController implements OnStart {
 	constructor(private readonly ui: UiController) {}
 
 	onStart(): void {
-		this.ui.mount("EncounterHud", <EncounterHud onShove={() => this.shove()} shoved={this.shoved} />, {
+		this.ui.mount(ENCOUNTER_HUD, <EncounterHud onShove={() => this.shove()} shoved={this.shoved} />, {
 			ignoreGuiInset: true,
 			displayOrder: 10,
 		});
@@ -54,8 +56,11 @@ export class EncounterController implements OnStart {
 		if (phase === undefined) {
 			this.scene?.stop();
 			this.scene = undefined;
+			this.ui.setFocus(undefined);
 			return;
 		}
+		// The fight takes the screen: the lobby HUD steps aside until it ends.
+		this.ui.setFocus(ENCOUNTER_HUD);
 
 		let scene = this.scene;
 		if (scene === undefined) {
