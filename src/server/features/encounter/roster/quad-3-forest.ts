@@ -41,8 +41,8 @@ export const QUAD_3: QuadDefinition = {
 			displayName: "Ancient Treant",
 			...tierTuning(11),
 			// Slow and devastating: rare surges behind the longest wind-up,
-			// and nearly the whole push lands in each long lunge.
-			surge: { minGap: 4.5, maxGap: 6, warning: 1.2, duration: 0.6, share: 0.9 },
+			// and most of the push lands in each long lunge.
+			surge: { minGap: 4.5, maxGap: 5, warning: 1.2, duration: 0.6, share: 0.8 },
 		},
 	],
 };
