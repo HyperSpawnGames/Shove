@@ -2,7 +2,6 @@ import { Components } from "@flamework/components";
 import { Dependency } from "@flamework/core";
 import { Centurion, CenturionType, Command, CommandContext, CommandGuard, Guard, Register } from "@rbxts/centurion";
 import { RunService, StarterPlayer } from "@rbxts/services";
-import { CoinsWallet } from "server/features/coins/coins-wallet";
 import { ArenaProgress } from "server/features/encounter/arena-progress";
 import { GateGhost } from "server/features/encounter/gate-ghost";
 import { StrengthStat } from "server/features/training/strength-stat";
@@ -98,27 +97,6 @@ class AdminCommands {
 
 		character.setWalkSpeed(speed);
 		ctx.reply(`${player.Name} walks at ${character.getWalkSpeed()} studs/s${speed === undefined ? " (default)" : ""}`);
-	}
-
-	// coins feature — remove alongside the coins folders.
-	@Command({
-		name: "givecoins",
-		description: "Give coins to a player",
-		arguments: [
-			{ name: "player", description: "The target player", type: CenturionType.Player },
-			{ name: "amount", description: "Number of coins", type: CenturionType.Number },
-		],
-	})
-	giveCoins(ctx: CommandContext, player: Player, amount: number) {
-		const wallet = Dependency<Components>().getComponent<CoinsWallet>(player);
-
-		if (!wallet) {
-			ctx.error(`Player data not loaded for ${player.Name}`);
-			return;
-		}
-
-		wallet.addCoins(amount);
-		ctx.reply(`Gave ${amount} coins to ${player.Name}`);
 	}
 
 	// training feature — remove alongside the training folders.

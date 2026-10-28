@@ -39,9 +39,9 @@ npm run lint          # eslint + prettier check (npm run format to fix)
 
 Press Play in the Studio window that opened: you should see `[push-a-giant] server ignited`,
 `[push-a-giant] client ignited`, `[push-a-giant] profile loaded for <you>`, then your character
-spawns and a coins HUD is wired end-to-end (button → intent → validation →
-mutator → Replica → React). Studio uses ProfileStore's mock store, so coins reset
-between Play sessions.
+spawns at the foot of the giant staircase, with Strength and Wins on the HUD
+(Train → intent → validation → mutator → Replica → React). Studio uses
+ProfileStore's mock store, so progress resets between Play sessions.
 
 ## Live sync
 
@@ -66,7 +66,7 @@ Gameplay is built as features: pure logic beside the layer that owns it
 (server rules in `src/server/features/<name>/`, presentation in
 `src/client/features/<name>/`), specs beside the code, thin
 services/controllers around them. `src/shared/` carries only what the client
-must see. The example `coins` feature from the template shows every seam; see
+must see. The `wins` and `training` features show every seam; see
 `CLAUDE.md` for the feature deletion contract.
 
 Conventions and invariants: `CLAUDE.md`. Vocabulary: `CONTEXT.md`.

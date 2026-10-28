@@ -38,7 +38,7 @@ _Avoid_: save, player data (as a noun)
 migrations run in sequence at load, before the Replica exists.
 
 **Mutator**: A typed, operation-shaped write method on a feature's per-player
-component (`CoinsWallet.addCoins`, not `setCoins`), the only caller of
+component (`WinsWallet.addWins`, not `setWins`), the only caller of
 `PlayerDataNode`'s write seam (`set`, `setEntry`, `insertItem`,
 `removeItemAt`). All other access is read-only.
 

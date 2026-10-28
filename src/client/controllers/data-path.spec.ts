@@ -2,7 +2,7 @@ import { describe, expect, it } from "@rbxts/jest-globals";
 import { getAt, snapshot } from "./data-path";
 
 const data = {
-	Coins: 3,
+	Wins: 3,
 	Settings: { music: { Enabled: true, Volume: 5 } },
 	Inventory: ["@1", "@2"],
 };
@@ -10,7 +10,7 @@ const data = {
 describe("getAt", () => {
 	it("reads a nested value", () => {
 		expect(getAt(data, ["Settings", "music", "Volume"])).toBe(5);
-		expect(getAt(data, ["Coins"])).toBe(3);
+		expect(getAt(data, ["Wins"])).toBe(3);
 	});
 
 	it("returns the document for the empty path", () => {
@@ -23,8 +23,8 @@ describe("getAt", () => {
 	});
 
 	it("is undefined when a step is not a table", () => {
-		expect(getAt(data, ["Coins", "x"])).toBeUndefined();
-		expect(getAt(undefined, ["Coins"])).toBeUndefined();
+		expect(getAt(data, ["Wins", "x"])).toBeUndefined();
+		expect(getAt(undefined, ["Wins"])).toBeUndefined();
 	});
 
 	it("uses a numeric key as Replica ships it: a Luau one-based index", () => {

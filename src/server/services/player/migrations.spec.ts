@@ -40,6 +40,14 @@ describe("migrate", () => {
 		expect(data.Version).toBe(LATEST_VERSION - 1);
 	});
 
+	it("drops the template's Coins field on the way to version 2", () => {
+		const data = { ...DEFAULT_PLAYER_DATA, Version: 1, Coins: 12 } as PlayerData & { Coins?: number };
+		const result = migrate(data) as PlayerData & { Coins?: number };
+		expect(result.Version).toBe(LATEST_VERSION);
+		expect(result.Coins).toBeUndefined();
+		expect(data.Coins).toBe(12);
+	});
+
 	it("throws when a migration step is missing", () => {
 		const data = { ...DEFAULT_PLAYER_DATA, Version: LATEST_VERSION - 1 };
 		expect(() => migrate(data, {})).toThrow();

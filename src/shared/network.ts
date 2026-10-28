@@ -1,8 +1,6 @@
 import { Networking } from "@flamework/networking";
 
 interface ClientToServerEvents {
-	// coins feature: ask the server for one coin. The server decides.
-	requestCoin(): void;
 	// training feature: ask to start or stop automatic push-ups. The server
 	// decides whether the player may train and when each rep completes.
 	requestStartTraining(): void;

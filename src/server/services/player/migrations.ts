@@ -1,7 +1,7 @@
 import type { PlayerData } from "shared/types/player-data";
 import { deepCopy } from "server/util/deep-copy";
 
-export const LATEST_VERSION = 1;
+export const LATEST_VERSION = 2;
 
 export type MigrationSteps = { [fromVersion: number]: (data: PlayerData) => void };
 
@@ -11,7 +11,12 @@ export type MigrationSteps = { [fromVersion: number]: (data: PlayerData) => void
  * Example step, upgrading version 1 profiles after a hypothetical settings change:
  *   [1]: (data) => { data.Settings.music = data.Settings.music ?? true; }
  */
-const MIGRATIONS: MigrationSteps = {};
+const MIGRATIONS: MigrationSteps = {
+	// Version 2 drops Coins: the template's example currency, replaced by Wins.
+	[1]: (data) => {
+		delete (data as PlayerData & { Coins?: number }).Coins;
+	},
+};
 
 /**
  * Returns `data` itself when it is already at LATEST_VERSION or newer (no copy

@@ -6,7 +6,7 @@ const change = (path: DataPath): DataChange => ({ action: "Set", path, value: 1,
 
 describe("pathsOverlap", () => {
 	it("is true for equal paths", () => {
-		expect(pathsOverlap(["Coins"], ["Coins"])).toBe(true);
+		expect(pathsOverlap(["Wins"], ["Wins"])).toBe(true);
 		expect(pathsOverlap(["Settings", "music"], ["Settings", "music"])).toBe(true);
 	});
 
@@ -16,13 +16,13 @@ describe("pathsOverlap", () => {
 	});
 
 	it("is false for siblings", () => {
-		expect(pathsOverlap(["Coins"], ["Settings"])).toBe(false);
+		expect(pathsOverlap(["Wins"], ["Settings"])).toBe(false);
 		expect(pathsOverlap(["Settings", "music"], ["Settings", "sfx"])).toBe(false);
 	});
 
 	it("treats the empty path as a prefix of everything", () => {
-		expect(pathsOverlap([], ["Coins"])).toBe(true);
-		expect(pathsOverlap(["Coins", "x"], [])).toBe(true);
+		expect(pathsOverlap([], ["Wins"])).toBe(true);
+		expect(pathsOverlap(["Wins", "x"], [])).toBe(true);
 		expect(pathsOverlap([], [])).toBe(true);
 	});
 });
@@ -31,22 +31,22 @@ describe("PathSubscriptions", () => {
 	it("fires root subscribers first, then the change's bucket, each in subscription order", () => {
 		const subscriptions = new PathSubscriptions();
 		const order: string[] = [];
-		subscriptions.subscribe(["Coins"], () => {
-			order.push("coins-1");
+		subscriptions.subscribe(["Wins"], () => {
+			order.push("wins-1");
 		});
 		subscriptions.subscribe([], () => {
 			order.push("root-1");
 		});
-		subscriptions.subscribe(["Coins"], () => {
-			order.push("coins-2");
+		subscriptions.subscribe(["Wins"], () => {
+			order.push("wins-2");
 		});
 		subscriptions.subscribe([], () => {
 			order.push("root-2");
 		});
 
-		subscriptions.dispatch(change(["Coins"]));
+		subscriptions.dispatch(change(["Wins"]));
 
-		expect(order).toEqual(["root-1", "root-2", "coins-1", "coins-2"]);
+		expect(order).toEqual(["root-1", "root-2", "wins-1", "wins-2"]);
 	});
 
 	it("hands the listener the change itself", () => {
@@ -70,7 +70,7 @@ describe("PathSubscriptions", () => {
 			fired += 1;
 		});
 
-		subscriptions.dispatch(change(["Coins"]));
+		subscriptions.dispatch(change(["Wins"]));
 
 		expect(fired).toBe(0);
 	});
@@ -111,8 +111,8 @@ describe("PathSubscriptions", () => {
 	it("reaches every bucket for an empty-path change", () => {
 		const subscriptions = new PathSubscriptions();
 		const fired: string[] = [];
-		subscriptions.subscribe(["Coins"], () => {
-			fired.push("Coins");
+		subscriptions.subscribe(["Wins"], () => {
+			fired.push("Wins");
 		});
 		subscriptions.subscribe(["Settings"], () => {
 			fired.push("Settings");
@@ -121,20 +121,20 @@ describe("PathSubscriptions", () => {
 		subscriptions.dispatch(change([]));
 
 		// Bucket order is unspecified for a root change; only membership is.
-		expect(fired.sort()).toEqual(["Coins", "Settings"]);
+		expect(fired.sort()).toEqual(["Settings", "Wins"]);
 	});
 
 	it("stops firing after unsubscribe and drops the count", () => {
 		const subscriptions = new PathSubscriptions();
 		let fired = 0;
-		const unsubscribe = subscriptions.subscribe(["Coins"], () => {
+		const unsubscribe = subscriptions.subscribe(["Wins"], () => {
 			fired += 1;
 		});
 		expect(subscriptions.count()).toBe(1);
 
 		unsubscribe();
 		unsubscribe();
-		subscriptions.dispatch(change(["Coins"]));
+		subscriptions.dispatch(change(["Wins"]));
 
 		expect(fired).toBe(0);
 		expect(subscriptions.count()).toBe(0);
@@ -143,14 +143,14 @@ describe("PathSubscriptions", () => {
 	it("reports a throwing listener and still runs the next", () => {
 		const subscriptions = new PathSubscriptions();
 		let fired = false;
-		subscriptions.subscribe(["Coins"], () => {
+		subscriptions.subscribe(["Wins"], () => {
 			throw "boom";
 		});
-		subscriptions.subscribe(["Coins"], () => {
+		subscriptions.subscribe(["Wins"], () => {
 			fired = true;
 		});
 
-		expect(() => subscriptions.dispatch(change(["Coins"]))).never.toThrow();
+		expect(() => subscriptions.dispatch(change(["Wins"]))).never.toThrow();
 		expect(fired).toBe(true);
 	});
 });

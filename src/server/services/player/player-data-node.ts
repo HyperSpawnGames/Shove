@@ -15,7 +15,7 @@ const PlayerDataToken = ReplicaServer.Token(PLAYER_DATA_TOKEN);
  *
  * `set`, `setEntry`, `insertItem` and `removeItemAt` are the single write
  * seam. Nothing calls them from arbitrary code: each feature's per-player
- * component wraps them in operation-shaped mutators (CoinsWallet.addCoins),
+ * component wraps them in operation-shaped mutators (WinsWallet.addWins),
  * which is where validation and change signals live.
  */
 @Component({ tag: PLAYER_LOADED_TAG })

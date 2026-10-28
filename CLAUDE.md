@@ -13,10 +13,10 @@ Invariants outrank features.
 ## Invariants
 
 - **The client sends intent; the server decides.** Client→server events are
-  named as requested actions (`requestCoin`), never resulting states. Handlers
+  named as requested actions (`requestShove`), never resulting states. Handlers
   validate game rules and silently drop invalid intents.
 - **Profile writes go only through a feature's per-player component**
-  (`CoinsWallet.addCoins`): operation-shaped mutators that validate, call the
+  (`WinsWallet.addWins`): operation-shaped mutators that validate, call the
   typed write seam on `PlayerDataNode` (`set`, `setEntry`, `insertItem`,
   `removeItemAt`), and announce the change. Nothing else calls the seam. All
   other access is `getData(): Readonly<PlayerData>`.
@@ -39,8 +39,8 @@ Invariants outrank features.
 `src/{client,server,shared}` — layer-first at the Rojo boundary, feature-first
 within. A **feature** is a deletable unit of gameplay: deleting it means
 deleting its `features/<name>/` folders plus its schema field and network
-events — and nothing else. The `coins` feature is the living example
-of every seam; read it before adding a feature.
+events — and nothing else. The `wins` and `training` features are the
+living examples of every seam; read them before adding a feature.
 
 ## Stack
 
