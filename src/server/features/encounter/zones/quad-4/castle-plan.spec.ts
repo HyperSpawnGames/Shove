@@ -148,7 +148,8 @@ describe("planCastleTerrace", () => {
 				for (const pieces of terraces) {
 					const count = (name: string) => pieces.filter((piece) => piece.name === name).size();
 					expect(count("TowerBody")).toBe(4);
-					expect(count("Wall") >= 4).toBe(true);
+					expect(count("Wall")).toBe(2);
+					expect(count("Parapet")).toBe(2);
 					expect(count("GateLintel")).toBe(1);
 					expect(count("Banner") >= 2).toBe(true);
 					expect(pieces.filter((piece) => piece.fire === true).size() >= 2).toBe(true);
@@ -156,6 +157,18 @@ describe("planCastleTerrace", () => {
 			});
 		});
 	}
+
+	it("keeps the front parapets, merlons included, low enough to see the terrace over from below", () => {
+		const stairs = staircase(4);
+		plan(stairs).forEach((pieces, index) => {
+			const floorY = stairs.terraces[index].floorY;
+			const parapets = pieces.filter((piece) => piece.name === "Parapet" || piece.name === "ParapetMerlon");
+			expect(parapets.size() > 2).toBe(true);
+			for (const piece of parapets) {
+				expect(boundsOf(piece.cframe, piece.size).max.Y - floorY <= 7).toBe(true);
+			}
+		});
+	});
 
 	it("lifts the gateway's lintel clear above the lane", () => {
 		const stairs = staircase(4);
