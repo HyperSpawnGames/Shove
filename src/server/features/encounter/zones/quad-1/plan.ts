@@ -24,8 +24,6 @@ const HEADROOM = 12;
 const GATE_HEIGHT = 14;
 /** How far the meadow reaches past the widest terrace, either side. */
 const MEADOW_REACH = 110;
-/** Grass sits this far above the floor, under the path, so the two never flicker. */
-const GRASS_LIFT = 0.08;
 
 const TERRACE_GREENS = [Color3.fromRGB(104, 172, 72), Color3.fromRGB(92, 160, 64)];
 const MEADOW_GREEN = Color3.fromRGB(96, 166, 66);
@@ -134,21 +132,6 @@ function scatter(
 	}
 }
 
-/** The first terrace's grass carpet, laid over the baseplate like the raised terraces' tops. */
-function groundCarpet(group: string, terrace: TerraceLayout, color: Color3): PartSpec {
-	const depth = terrace.frontZ - terrace.backZ;
-	return {
-		group,
-		name: "Grass",
-		shape: "block",
-		size: new Vector3(terrace.width, 1, depth),
-		cframe: new CFrame(0, terrace.floorY + GRASS_LIFT - 0.5, (terrace.frontZ + terrace.backZ) / 2),
-		color,
-		material: Enum.Material.Grass,
-		collide: false,
-	};
-}
-
 /** The signpost by the foot of the first terrace, as close to the lane as the keep-clear boxes allow. */
 function placeSignpost(
 	group: string,
@@ -173,7 +156,6 @@ function dressTerrace(index: number, terrace: TerraceLayout, keepClear: readonly
 	const parts: PartSpec[] = [];
 	const spots: Spot[] = [];
 
-	if (!raised) parts.push(groundCarpet(group, terrace, terraceColor(index)));
 	parts.push(path(group, terrace.floorY, terrace.frontZ, terrace.backZ, 9 * k));
 
 	// Fence along both sides and the back, leaving the lane open to the ramp.
@@ -233,8 +215,9 @@ function dressTerrace(index: number, terrace: TerraceLayout, keepClear: readonly
 }
 
 /**
- * The meadow the staircase climbs out of: a grass carpet over the baseplate,
- * ground carried on past its edge under the higher terraces, and two rows
+ * The meadow the staircase climbs out of: the baseplate is already its grass,
+ * so the ground is only carried on past the baseplate's edge under the
+ * higher terraces, flush with it, and two rows
  * of rolling hills either side, some with a tree on top.
  */
 function dressMeadow(layout: GrasslandLayout, keepOut: readonly ClearZone[]): PartSpec[] {
@@ -247,17 +230,6 @@ function dressMeadow(layout: GrasslandLayout, keepOut: readonly ClearZone[]): Pa
 	const meadowHalf = widest + MEADOW_REACH;
 	const parts: PartSpec[] = [];
 
-	const carpetBack = math.max(last.backZ - RAMP_RUN / 2, -BASEPLATE_HALF);
-	parts.push({
-		group,
-		name: "Grass",
-		shape: "block",
-		size: new Vector3(2 * meadowHalf, 1, first.frontZ - carpetBack),
-		cframe: new CFrame(0, GRASS_LIFT / 2 - 0.5, (first.frontZ + carpetBack) / 2),
-		color: MEADOW_GREEN,
-		material: Enum.Material.Grass,
-		collide: false,
-	});
 	const groundEnd = last.backZ - RAMP_RUN / 2;
 	if (groundEnd < -BASEPLATE_HALF) {
 		const thickness = 16;
@@ -266,7 +238,7 @@ function dressMeadow(layout: GrasslandLayout, keepOut: readonly ClearZone[]): Pa
 			name: "Ground",
 			shape: "block",
 			size: new Vector3(2 * meadowHalf, thickness, -BASEPLATE_HALF - groundEnd),
-			cframe: new CFrame(0, GRASS_LIFT / 2 - thickness / 2, (-BASEPLATE_HALF + groundEnd) / 2),
+			cframe: new CFrame(0, -thickness / 2, (-BASEPLATE_HALF + groundEnd) / 2),
 			color: MEADOW_GREEN,
 			material: Enum.Material.Grass,
 			collide: true,
