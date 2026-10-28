@@ -18,6 +18,10 @@ const RAMP_WIDTH = 16;
 const RAMP_THICKNESS = 2;
 const GATE_HEIGHT = 14;
 const PEDESTAL_HEIGHT = 1;
+/** How far away a gate's sign shows, and a giant's: about the reach of its own terrace. */
+const GATE_SIGN_DISTANCE = 70;
+const GIANT_SIGN_BASE_DISTANCE = 50;
+const GIANT_SIGN_DISTANCE_PER_SCALE = 12;
 /** Studs in front of a giant (toward the spawn) where a finished fight puts the player back. */
 const RETURN_DISTANCE = 12;
 
@@ -49,11 +53,16 @@ function lock(instance: Instance, opensAt: number): void {
 	CollectionService.AddTag(instance, STAIRCASE_LOCK_TAG);
 }
 
-function label(parent: Instance, text: string, offset: Vector3, size: UDim2): void {
+/**
+ * A floating sign. `maxDistance` keeps it to its own stretch of the climb:
+ * signs face the camera and draw over what is behind them, so a long reach
+ * stacks the next giants' signs over the one the player is standing at.
+ */
+function label(parent: Instance, text: string, offset: Vector3, size: UDim2, maxDistance: number): void {
 	const billboard = new Instance("BillboardGui");
 	billboard.Size = size;
 	billboard.StudsOffsetWorldSpace = offset;
-	billboard.MaxDistance = 200;
+	billboard.MaxDistance = maxDistance;
 	billboard.Parent = parent;
 	const textLabel = new Instance("TextLabel");
 	textLabel.Size = UDim2.fromScale(1, 1);
@@ -129,6 +138,7 @@ export function buildRamp(
 		`Defeat the ${gate.beat.displayName} to open`,
 		new Vector3(0, GATE_HEIGHT / 2 + 2, 0),
 		UDim2.fromOffset(320, 50),
+		GATE_SIGN_DISTANCE,
 	);
 	lock(wall, gate.opensAt);
 	return ramp;
@@ -193,6 +203,7 @@ export function buildGiant(
 		`${giant.displayName}\n<font color="#FFC850">${formatNumber(giant.recommendedStrength)} Strength</font>  <font color="#6EC8FF">+${formatNumber(giant.winsPayout)} Wins</font>`,
 		new Vector3(0, size.Y / 2 + 2.5, 0),
 		UDim2.fromOffset(260, 90),
+		GIANT_SIGN_BASE_DISTANCE + GIANT_SIGN_DISTANCE_PER_SCALE * giant.scale,
 	);
 
 	const prompt = new Instance("ProximityPrompt");
