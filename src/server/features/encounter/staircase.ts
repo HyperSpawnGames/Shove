@@ -18,10 +18,14 @@ const RAMP_WIDTH = 16;
 const RAMP_THICKNESS = 2;
 const GATE_HEIGHT = 14;
 const PEDESTAL_HEIGHT = 1;
-/** How far away a gate's sign shows, and a giant's: about the reach of its own terrace. */
-const GATE_SIGN_DISTANCE = 70;
+/** How far away a giant's sign shows: about the reach of its own terrace. */
 const GIANT_SIGN_BASE_DISTANCE = 50;
 const GIANT_SIGN_DISTANCE_PER_SCALE = 12;
+/** How far away a gate's sign shows: from its ramp, once the player is past the giant below it. */
+const GATE_SIGN_DISTANCE = 70;
+/** How wide the text on a gate runs, in studs: about a ramp's width either side of it. */
+const GATE_SIGN_WIDTH = 30;
+const GATE_SIGN_PIXELS_PER_STUD = 25;
 /** Studs in front of a giant (toward the spawn) where a finished fight puts the player back. */
 const RETURN_DISTANCE = 12;
 
@@ -74,6 +78,33 @@ function label(parent: Instance, text: string, offset: Vector3, size: UDim2, max
 	textLabel.RichText = true;
 	textLabel.Text = text;
 	textLabel.Parent = billboard;
+}
+
+/**
+ * A gate's sign, painted on the face that looks down its ramp. The gate
+ * stands just behind and above the giant that opens it, so a floating sign
+ * would sit on top of that giant's own; a flat one cannot.
+ */
+function gateSign(wall: BasePart, text: string): void {
+	const surface = new Instance("SurfaceGui");
+	// The ramp climbs toward -Z, so the face it arrives at is the wall's +Z side.
+	surface.Face = Enum.NormalId.Back;
+	surface.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud;
+	surface.PixelsPerStud = GATE_SIGN_PIXELS_PER_STUD;
+	surface.LightInfluence = 0;
+	surface.MaxDistance = GATE_SIGN_DISTANCE;
+	surface.Parent = wall;
+	const textLabel = new Instance("TextLabel");
+	textLabel.AnchorPoint = new Vector2(0.5, 0.5);
+	textLabel.Position = UDim2.fromScale(0.5, 0.35);
+	textLabel.Size = UDim2.fromOffset(GATE_SIGN_WIDTH * GATE_SIGN_PIXELS_PER_STUD, 2.4 * GATE_SIGN_PIXELS_PER_STUD);
+	textLabel.BackgroundTransparency = 1;
+	textLabel.Font = Enum.Font.GothamBlack;
+	textLabel.TextScaled = true;
+	textLabel.TextColor3 = new Color3(1, 1, 1);
+	textLabel.TextStrokeTransparency = 0.2;
+	textLabel.Text = text;
+	textLabel.Parent = surface;
 }
 
 /** Slot `slot`'s raised block, or undefined for slot 0, which is the baseplate. */
@@ -133,13 +164,7 @@ export function buildRamp(
 	);
 	wall.Transparency = 0.2;
 	wall.CollisionGroup = GATE_GROUP;
-	label(
-		wall,
-		`Defeat the ${gate.beat.displayName} to open`,
-		new Vector3(0, GATE_HEIGHT / 2 + 2, 0),
-		UDim2.fromOffset(320, 50),
-		GATE_SIGN_DISTANCE,
-	);
+	gateSign(wall, `Defeat the ${gate.beat.displayName} to open`);
 	lock(wall, gate.opensAt);
 	return ramp;
 }

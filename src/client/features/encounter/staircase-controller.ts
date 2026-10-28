@@ -45,7 +45,7 @@ export class StaircaseController implements OnStart {
 		} else if (instance.IsA("BasePart") && open && instance.CanCollide) {
 			instance.CanCollide = false;
 			for (const gui of instance.GetDescendants()) {
-				if (gui.IsA("BillboardGui")) gui.Enabled = false;
+				if (gui.IsA("LayerCollector")) gui.Enabled = false;
 			}
 			if (animate) {
 				TweenService.Create(instance, new TweenInfo(GATE_FADE_SECONDS), { Transparency: 1 }).Play();
