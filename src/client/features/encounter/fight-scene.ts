@@ -1,5 +1,6 @@
 import { RunService, Workspace } from "@rbxts/services";
 import { pauseAnimate } from "client/util/pause-animate";
+import { lowestFootY } from "client/util/feet";
 import { addPoses, mixPoses, RigPoser, scalePose, SpringPoser } from "client/util/rig-poser";
 import {
 	ARENA_GIANT_NAME,
@@ -253,20 +254,8 @@ export class FightScene {
 
 	/** How far a rig's lower foot sits above the floor; negative when it is sunk in. */
 	private footClearance(rig: Model | undefined): number {
-		let lowest = math.huge;
-		for (const name of ["LeftFoot", "RightFoot"]) {
-			const foot = rig?.FindFirstChild(name);
-			if (!foot?.IsA("BasePart")) continue;
-			const half = foot.Size.div(2);
-			for (const x of [-1, 1]) {
-				for (const y of [-1, 1]) {
-					for (const z of [-1, 1]) {
-						lowest = math.min(lowest, foot.CFrame.PointToWorldSpace(half.mul(new Vector3(x, y, z))).Y);
-					}
-				}
-			}
-		}
-		return lowest === math.huge ? 0 : lowest - this.floorY;
+		const lowest = lowestFootY(rig);
+		return lowest === undefined ? 0 : lowest - this.floorY;
 	}
 
 	/** Small puffs under the giant's feet as its steps land; it is heavy. */

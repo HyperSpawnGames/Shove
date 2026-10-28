@@ -37,6 +37,8 @@ export const ARENA_GIANT_NAME = "Giant";
 
 /** CollectionService tag on each giant waiting on its terrace, which clients animate idly. */
 export const LOBBY_GIANT_TAG = "LobbyGiant";
+/** number attribute on a lobby giant: the height of the pedestal top its feet stand on. */
+export const GIANT_FLOOR_ATTRIBUTE = "FloorY";
 
 /** Workspace folder holding the staircase: terraces, ramps, gates and the giants on them. */
 export const STAIRCASE_FOLDER = "Staircase";

@@ -1,5 +1,6 @@
 import { CollectionService } from "@rbxts/services";
 import {
+	GIANT_FLOOR_ATTRIBUTE,
 	LOBBY_GIANT_TAG,
 	OPENS_AT_ATTRIBUTE,
 	STAIRCASE_LOCK_TAG,
@@ -180,6 +181,7 @@ export function buildGiant(
 	const standing = position.add(new Vector3(0, PEDESTAL_HEIGHT, 0));
 	placeOnFloor(model, CFrame.lookAt(standing, standing.add(new Vector3(0, 0, 1))));
 	model.Name = giant.modelId;
+	model.SetAttribute(GIANT_FLOOR_ATTRIBUTE, standing.Y);
 	CollectionService.AddTag(model, LOBBY_GIANT_TAG);
 	startIdle(model);
 
