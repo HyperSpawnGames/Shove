@@ -11,8 +11,6 @@ import { dressCharacter } from "./boost-visuals";
 
 /** The name this feature's bonus and multiplier go by in training. */
 const SOURCE = "boosts";
-/** The longest a fresh body is given to load the avatar's appearance before it is dressed anyway. */
-const APPEARANCE_WAIT_SECONDS = 10;
 
 /**
  * A player's outlines and powers, and the only write path for them. Buying
@@ -75,16 +73,8 @@ export class BoostLoadout extends BaseComponent<{}, Player> implements OnStart {
 
 	private dress(body = this.character.getCharacter()): void {
 		if (body === undefined) return;
-		task.spawn(() => {
-			// A fresh body's hands and feet are swapped for the avatar's in the
-			// frame it arrives, taking anything attached to them along; dress the ones that stay.
-			const deadline = os.clock() + APPEARANCE_WAIT_SECONDS;
-			while (!this.instance.HasAppearanceLoaded() && os.clock() < deadline) task.wait(0.1);
-			if (body.Parent === undefined) return;
-
-			const data = this.dataNode.getData();
-			dressCharacter(body, findOutline(data.EquippedOutline), findPower(data.EquippedPower));
-		});
+		const data = this.dataNode.getData();
+		dressCharacter(body, findOutline(data.EquippedOutline), findPower(data.EquippedPower));
 	}
 
 	override destroy(): void {

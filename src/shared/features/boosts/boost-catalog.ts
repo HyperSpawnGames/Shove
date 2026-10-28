@@ -25,14 +25,9 @@ export interface PowerTier {
 	price: number;
 	/** Multiplies the player's Strength. */
 	multiplier: number;
+	/** The shop swatch; the effect itself is drawn by each client (client/features/boosts/power-effects.ts). */
 	color: Color3;
-	/** An engine particle texture, so no uploaded asset is needed. */
-	texture: string;
 }
-
-const SPARKLES = "rbxasset://textures/particles/sparkles_main.dds";
-const FIRE = "rbxasset://textures/particles/fire_main.dds";
-const SMOKE = "rbxasset://textures/particles/smoke_main.dds";
 
 export const OUTLINES: readonly OutlineTier[] = [
 	{ id: "White", name: "White", price: 10, bonusPerRep: 1, color: Color3.fromRGB(255, 255, 255) },
@@ -48,29 +43,22 @@ export const OUTLINES: readonly OutlineTier[] = [
 ];
 
 export const POWERS: readonly PowerTier[] = [
-	{ id: "Spark", name: "Spark", price: 25, multiplier: 1.5, color: Color3.fromRGB(255, 240, 150), texture: SPARKLES },
-	{ id: "Ember", name: "Ember", price: 300, multiplier: 2, color: Color3.fromRGB(255, 120, 30), texture: FIRE },
-	{ id: "Frost", name: "Frost", price: 5_000, multiplier: 3, color: Color3.fromRGB(150, 220, 255), texture: SPARKLES },
-	{ id: "Storm", name: "Storm", price: 80_000, multiplier: 5, color: Color3.fromRGB(120, 140, 255), texture: SPARKLES },
-	{ id: "Venom", name: "Venom", price: 1_500_000, multiplier: 8, color: Color3.fromRGB(110, 255, 60), texture: SMOKE },
-	{
-		id: "Shadow",
-		name: "Shadow",
-		price: 30_000_000,
-		multiplier: 13,
-		color: Color3.fromRGB(90, 30, 140),
-		texture: SMOKE,
-	},
-	{
-		id: "Cosmic",
-		name: "Cosmic",
-		price: 600_000_000,
-		multiplier: 21,
-		color: Color3.fromRGB(255, 80, 255),
-		texture: SPARKLES,
-	},
-	{ id: "Void", name: "Void", price: 12e9, multiplier: 35, color: Color3.fromRGB(150, 60, 255), texture: FIRE },
+	{ id: "Spark", name: "Spark", price: 25, multiplier: 1.5, color: Color3.fromRGB(255, 240, 150) },
+	{ id: "Ember", name: "Ember", price: 300, multiplier: 2, color: Color3.fromRGB(255, 120, 30) },
+	{ id: "Frost", name: "Frost", price: 5_000, multiplier: 3, color: Color3.fromRGB(150, 220, 255) },
+	{ id: "Storm", name: "Storm", price: 80_000, multiplier: 5, color: Color3.fromRGB(120, 140, 255) },
+	{ id: "Venom", name: "Venom", price: 1_500_000, multiplier: 8, color: Color3.fromRGB(110, 255, 60) },
+	{ id: "Shadow", name: "Shadow", price: 30_000_000, multiplier: 13, color: Color3.fromRGB(90, 30, 140) },
+	{ id: "Cosmic", name: "Cosmic", price: 600_000_000, multiplier: 21, color: Color3.fromRGB(255, 80, 255) },
+	{ id: "Void", name: "Void", price: 12e9, multiplier: 35, color: Color3.fromRGB(150, 60, 255) },
 ];
+
+/**
+ * The attribute the server sets on a body to the id of the power it wears
+ * (absent for none). Each client draws the power from it, so the animated
+ * parts of an effect (lightning, flicker) cost the server nothing.
+ */
+export const POWER_ATTRIBUTE = "BoostPower";
 
 /** The ladder for `kind`, in the order it is bought. */
 export function ladder(kind: BoostKind): readonly (OutlineTier | PowerTier)[] {
