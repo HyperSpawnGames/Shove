@@ -10,18 +10,28 @@
 --   parts/acc  BasePart and Accessory counts
 --   joints     the 15 Motor6Ds present, wired, Active, and holding Part1 where C0/C1 put it
 --   idle       the default R15 idle (the one giant-models.ts plays) loads, plays and moves joints
---   x2         the same giant sized x2 through the Humanoid's scale values (giant-models.ts's
---              path): measured height / (2 x Height), and every accessory still on its body part
+--   x2         the same giant sized x2 through the Humanoid's scale values: measured height /
+--              (2 x Height) and the feet offset the engine's HipHeight leaves, each compared with
+--              its base prefab's own x2 numbers (the engine is not exact on either, even for the
+--              imported rigs); every accessory still on its body part
+-- The six base prefabs run first as "control" lines (no x2 judgement, they are the reference).
 -- Animation is stepped with Animator:StepAnimations (plugin security, which run-in-roblox has), so
--- the place's own scripts never start. Expect one OK line per giant and "derived giants ok=6/6".
+-- the place's own scripts never start. Expect clean control lines, one OK line per giant and
+-- "derived giants ok=6/6".
 -- Close other Studio windows first (checks/README.md: run-in-roblox's plugin loads everywhere).
 
 local ServerStorage = game:GetService("ServerStorage")
 local LogService = game:GetService("LogService")
 
 local IDS = { "MosslingScout", "AncientTreant", "YetiWarlord", "VoidTyrant", "MagmaBrute", "IronChampion" }
--- Their bases, checked first as a reference (Phoenix rig and DungeonFall rig).
-local CONTROLS = { "IceKing", "BuffNoob" }
+-- The imported prefab each was derived from (VARIANTS in derive_giants.luau).
+local BASES = {
+	MosslingScout = "LeafNinja", AncientTreant = "ForestTroll", YetiWarlord = "IceKing",
+	VoidTyrant = "ChaosSummoner", MagmaBrute = "RedOrc", IronChampion = "BuffNoob",
+}
+-- How far a derived giant's x2 height ratio and feet offset (fraction of height) may stray
+-- from its base's. Reshaping shifts both slightly (more or less leg in the height).
+local X2_TOLERANCE = 0.03
 local IDLE = "rbxassetid://507766666"
 local SCALE_VALUES = { "BodyWidthScale", "BodyHeightScale", "BodyDepthScale", "HeadScale" }
 local R15 = {
@@ -140,7 +150,7 @@ local function maxJointAngle(model)
 	return math.deg(best)
 end
 
-local function probe(id, x)
+local function probe(id, x, reference)
 	local problems = {}
 	local function problem(s) table.insert(problems, s) end
 	table.clear(logged)
@@ -200,17 +210,32 @@ local function probe(id, x)
 	local jpAfter = jointProblems(model, 0.05)
 	for _, p in jpAfter do problem("after idle: " .. p) end
 
-	-- x2 through the Humanoid's scale values, as the game sizes giants up to 2.5x.
+	-- x2 through the Humanoid's scale values, as the game sizes giants up to 2.5x. The engine
+	-- does not double a rig exactly: body-type blending gives ~0.95x the expected height, and
+	-- the HipHeight it sets leaves the feet a little off the floor (the imported IceKing and
+	-- BuffNoob measure 0.945 and 0.19-0.35 studs). So these two numbers are not judged
+	-- absolutely; a derived giant must match its own base prefab's numbers (run first, as a
+	-- control) within X2_TOLERANCE, the feet offset taken as a fraction of the giant's height.
+	local x2 = nil
 	local x2Note = "x2 not run"
 	ok, err = pcall(function()
 		for _, name in SCALE_VALUES do humanoid[name].Value = 2 end
+		-- Let the rescale settle: a frame, and one animation step to re-pose the joints.
 		task.wait(0.1)
+		animator:StepAnimations(0)
+		task.wait()
 		stand(model, x)
 		local f2, t2 = bodyExtent(model)
-		local ratio = (t2 - f2) / (2 * attrHeight)
-		x2Note = string.format("x2 height ratio %.3f feet %.3f", ratio, f2)
-		if math.abs(ratio - 1) > 0.05 then problem(string.format("x2 height ratio %.3f", ratio)) end
-		if math.abs(f2) > 0.05 then problem(string.format("x2 feet at %.3f", f2)) end
+		x2 = { ratio = (t2 - f2) / (2 * attrHeight), feet = f2 / (2 * attrHeight) }
+		x2Note = string.format("x2 height ratio %.3f feet %.3f (%.3f of height)", x2.ratio, f2, x2.feet)
+		if reference then
+			if math.abs(x2.ratio - reference.ratio) > X2_TOLERANCE then
+				problem(string.format("x2 height ratio %.3f, base %.3f", x2.ratio, reference.ratio))
+			end
+			if math.abs(x2.feet - reference.feet) > X2_TOLERANCE then
+				problem(string.format("x2 feet offset %.3f of height, base %.3f", x2.feet, reference.feet))
+			end
+		end
 		for _, p in accessoryProblems(model, 2) do problem("x2 " .. p) end
 		for _, p in (jointProblems(model, 0.02)) do problem("x2 " .. p) end
 	end)
@@ -225,20 +250,27 @@ local function probe(id, x)
 		id, height, tostring(attrHeight), feet, parts, accessories, jointsOk, idleNote, x2Note,
 		#problems == 0 and "OK" or "PROBLEMS"
 	)
-	return line, problems
+	return line, problems, x2
 end
 
--- Imported prefabs through the same checks first: if a control fails the same way, the
--- probe or the engine is at fault, not the derived giants.
-for i, id in CONTROLS do
-	local line, problems = probe(id, -i * 25)
-	print("control " .. line)
-	for _, p in problems do print("  control problem " .. p) end
+-- Each derived giant's base prefab goes through the same checks first, as a control and as
+-- the x2 reference: if a control fails, the probe or the engine is at fault, not the giant.
+local references = {}
+for i, id in IDS do
+	local base = BASES[id]
+	if references[base] == nil then
+		local line, problems, x2 = probe(base, -i * 25, nil)
+		references[base] = x2 or false
+		print("control " .. line)
+		for _, p in problems do print("  control problem " .. p) end
+	end
 end
 local passed = 0
 for i, id in IDS do
-	local line, problems = probe(id, (i - 1) * 25)
+	local reference = references[BASES[id]]
+	local line, problems = probe(id, (i - 1) * 25, reference or nil)
 	print(line)
+	if not reference then table.insert(problems, "no x2 reference: base " .. BASES[id] .. " failed to scale") end
 	for _, p in problems do print("  PROBLEM " .. p) end
 	if #problems == 0 then passed += 1 end
 end

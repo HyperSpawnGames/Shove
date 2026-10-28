@@ -85,6 +85,42 @@ end
              `fromEnd` it grows on from there, e.g. a horn that curves).
 	lights       PointLights: { part, color, range, brightness }.
 ]]
+-- Glowing lava veins for the Magma Brute: thin Neon strips half sunk into a part's front
+-- (face "front") or outer side (face "side"), each `length` x the part's height, tilted
+-- by `tilt` degrees. CrackedLava's own cracks vanish at viewing distance; these do not.
+local LAVA = "#FF7A1A"
+local function lavaVeins(veins)
+	local out = {}
+	for i, vein in veins do
+		local part, face, x, y, length, tilt = vein[1], vein[2], vein[3], vein[4], vein[5], vein[6]
+		local spec = {
+			name = `LavaVein{part}{i}`,
+			part = part,
+			attach = part .. "AccentAttachment",
+			newAttach = true,
+			shape = "Block",
+			sizeOfPart = v(0, length, 0),
+			color = LAVA,
+			material = "Neon",
+		}
+		if face == "front" then
+			spec.size, spec.at, spec.rot = v(0.1, 0, 0.08), v(x, y, -0.5), v(0, 0, tilt)
+		else -- side: x is the side (-0.5 left, 0.5 right), the strip runs front to back
+			spec.size, spec.at, spec.rot = v(0.08, 0, 0.1), v(x, y, 0.05), v(tilt, 0, 0)
+		end
+		table.insert(out, spec)
+	end
+	return out
+end
+
+local function concat(...)
+	local out = {}
+	for _, list in { ... } do
+		table.move(list, 1, #list, #out + 1, out)
+	end
+	return out
+end
+
 local VARIANTS = {
 	{
 		id = "MosslingScout",
@@ -254,7 +290,7 @@ local VARIANTS = {
 		quad = 6,
 		theme = "Chaos",
 		rosterIndex = 24,
-		look = "Towering: the Chaos Summoner stretched tall (longer legs, arms and torso) in void black and deep violet, a violet-tinted Ice Crown, glowing neon-violet hands, a neon core on the chest, three neon spines fanning from the back and a violet light.",
+		look = "Towering: the Chaos Summoner stretched tall (longer legs, arms and torso) in void black and deep violet, a the Ice Crown stripped to solid dark-violet metal, glowing neon-violet hands, a neon core on the chest, three neon spines fanning from the back and a violet light.",
 		proportions = {
 			Head = 1.0,
 			UpperTorso = v(1.15, 1.2, 1.1),
@@ -282,7 +318,8 @@ local VARIANTS = {
 			["Rope Wrap Final"] = { "#6E3CA0" },
 		},
 		transplant = {
-			{ from = "IceKing", name = "Ice Crown", as = "Void Crown", tint = { "#B070FF", 1.3 }, scale = 1.1 },
+			-- Its lavender and blue gem are in the texture: strip it to solid dark-violet metal.
+			{ from = "IceKing", name = "Ice Crown", as = "Void Crown", tint = { "#5A1E9A", strip = true, material = "Metal" }, scale = 1.1 },
 		},
 		build = {
 			{ name = "VoidCore", part = "UpperTorso", attach = "BodyFrontAttachment", shape = "Ball", size = v(0.55), at = v(0, 0.12, -0.5), offset = v(0, 0, -0.08), color = "#C878FF", material = "Neon" },
@@ -299,7 +336,7 @@ local VARIANTS = {
 		quad = 7,
 		theme = "Volcanic",
 		rosterIndex = 27,
-		look = "Heavy: the Red Orc thickened everywhere with big fists, a charcoal CrackedLava body (glowing lava-orange cracks), charcoal-iron pauldrons and chest plate, the red mohawk tinted into a flame crest, the cyclops eye kept glowing, basalt spines with neon lava tips on the back and an orange light.",
+		look = "Heavy: the Red Orc thickened everywhere with big fists, a charcoal CrackedLava body veined with glowing neon-orange lava strips on the arms, legs and torso sides, charcoal-iron pauldrons and chest plate, the red mohawk tinted into a flame crest, the cyclops eye kept glowing, basalt spines with neon lava tips on the back and an orange light.",
 		proportions = {
 			Head = 0.95,
 			UpperTorso = v(1.4, 1.1, 1.4),
@@ -329,7 +366,7 @@ local VARIANTS = {
 			["Orc Left PauldronAccessory"] = { "#4A403C" },
 			["Orc Chest ArmourAccessory"] = { "#4A403C" },
 		},
-		build = {
+		build = concat({
 			{
 				name = "MagmaSpineLeft", part = "UpperTorso", attach = "BodyBackAttachment", shape = "Block",
 				size = v(0.38, 1.2, 0.38), at = v(-0.25, 0.3, 0.5), offset = v(0, 0, 0.05), rot = v(35, 0, 25), fromEnd = "Y",
@@ -348,7 +385,25 @@ local VARIANTS = {
 				color = "#2A2220", material = "Basalt",
 				tip = { shape = "Ball", size = v(0.42), color = "#FF7A1A", material = "Neon" },
 			},
-		},
+		}, lavaVeins({
+			-- { part, face, x, y, length (x part height), tilt degrees }
+			{ "LeftUpperArm", "front", 0.1, 0.0, 0.55, 18 },
+			{ "LeftUpperArm", "side", -0.5, -0.1, 0.5, -15 },
+			{ "RightUpperArm", "front", -0.1, 0.0, 0.55, -18 },
+			{ "RightUpperArm", "side", 0.5, -0.1, 0.5, 15 },
+			{ "LeftLowerArm", "front", -0.05, 0.0, 0.7, -14 },
+			{ "LeftLowerArm", "side", -0.5, 0.05, 0.6, 20 },
+			{ "RightLowerArm", "front", 0.05, 0.0, 0.7, 14 },
+			{ "RightLowerArm", "side", 0.5, 0.05, 0.6, -20 },
+			{ "LeftUpperLeg", "front", 0.05, 0.0, 0.65, 12 },
+			{ "LeftUpperLeg", "side", -0.5, -0.05, 0.55, -18 },
+			{ "RightUpperLeg", "front", -0.05, 0.0, 0.65, -12 },
+			{ "RightUpperLeg", "side", 0.5, -0.05, 0.55, 18 },
+			{ "LeftLowerLeg", "front", -0.05, 0.0, 0.6, -14 },
+			{ "RightLowerLeg", "front", 0.05, 0.0, 0.6, 14 },
+			{ "UpperTorso", "side", -0.5, -0.1, 0.5, 15 },
+			{ "UpperTorso", "side", 0.5, -0.1, 0.5, -15 },
+		})),
 		lights = { { part = "UpperTorso", color = "#FF7A1A", range = 10, brightness = 2 } },
 	},
 	{
@@ -358,7 +413,7 @@ local VARIANTS = {
 		quad = 8,
 		theme = "Neon Arena",
 		rosterIndex = 31,
-		look = "Champion boxer: Buffnoob's muscle body with its textures stripped and plated in steel (DiamondPlate chest, Metal limbs), navy trunks, oversized red gloves, the Knight's steel pauldrons, and a gold title belt with a big gold front plate and a neon-cyan gem.",
+		look = "Champion boxer: Buffnoob's muscle body with its textures stripped and plated in steel (DiamondPlate chest, Metal limbs), navy trunks, oversized red boxing gloves (red balls over the hands with white cuffs), the Knight's steel pauldrons, and a gold title belt with a big gold front plate and a neon-cyan gem.",
 		proportions = {
 			Head = 1.0,
 			UpperTorso = v(1.15, 1.05, 1.12),
@@ -385,6 +440,11 @@ local VARIANTS = {
 		build = {
 			{ name = "TitleBeltStrap", part = "LowerTorso", attach = "WaistCenterAttachment", shape = "Block", sizeOfPart = v(1.02, 0, 1.04), size = v(0, 0.45, 0), at = v(0, 0.12, 0), color = "#C8A028", material = "Metal" },
 			{ name = "TitleBeltPlate", part = "LowerTorso", attach = "WaistFrontAttachment", shape = "Block", size = v(1.0, 0.66, 0.14), at = v(0, 0.12, -0.5), offset = v(0, 0, -0.09), color = "#F0C846", material = "Foil" },
+			-- Gloves built over the hands: the red painted on the hand meshes did not show in play.
+			{ name = "BoxingGloveLeft", part = "LeftHand", attach = "LeftGripAttachment", shape = "Ball", size = v(1.6), at = v(0, -0.08, -0.05), color = "#C8141E", material = "SmoothPlastic" },
+			{ name = "BoxingGloveRight", part = "RightHand", attach = "RightGripAttachment", shape = "Ball", size = v(1.6), at = v(0, -0.08, -0.05), color = "#C8141E", material = "SmoothPlastic" },
+			{ name = "BoxingCuffLeft", part = "LeftHand", attach = "LeftGripAttachment", shape = "Cylinder", size = v(0.4, 1.2, 1.2), at = v(0, 0.42, 0), rot = v(0, 0, 90), color = "#F2F2F2", material = "SmoothPlastic" },
+			{ name = "BoxingCuffRight", part = "RightHand", attach = "RightGripAttachment", shape = "Cylinder", size = v(0.4, 1.2, 1.2), at = v(0, 0.42, 0), rot = v(0, 0, 90), color = "#F2F2F2", material = "SmoothPlastic" },
 			{ name = "TitleBeltGem", part = "LowerTorso", attach = "WaistFrontAttachment", shape = "Ball", size = v(0.28), at = v(0, 0.12, -0.5), offset = v(0, 0, -0.17), color = "#28E6FF", material = "Neon" },
 		},
 	},
@@ -722,6 +782,18 @@ end
 local function addAccent(id: string, model, name: string, partName: string, attach: string, spec, placement)
 	local body = model:FindFirstChild(partName)
 	local bodyAtt = body and body:FindFirstChild(attach)
+	if body and not bodyAtt and spec.newAttach then
+		-- A part with no attachment of its own to hang accents on (a lower arm has only
+		-- rig attachments, whose names repeat on the neighbouring part): give it one at
+		-- its centre, which no reshape or engine rescale moves.
+		bodyAtt = Instance.new("Attachment")
+		bodyAtt.Name = attach
+		local original = Instance.new("Vector3Value")
+		original.Name = "OriginalPosition"
+		original.Value = Vector3.new(0, 0, 0)
+		original.Parent = bodyAtt
+		bodyAtt.Parent = body
+	end
 	if not (bodyAtt and bodyAtt:IsA("Attachment")) then
 		fail(id, `accent {name}: {partName} has no {attach}`)
 	end
