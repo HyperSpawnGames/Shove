@@ -12,6 +12,14 @@ export interface PlayerData {
 	Wins: number;
 	/** encounter feature: giants of the staircase beaten at least once; each opens the next ramp. */
 	HighestCleared: number;
+	/** boosts feature: outline tiers bought, by id. */
+	Outlines: { [id: string]: boolean };
+	/** boosts feature: power tiers bought, by id. */
+	Powers: { [id: string]: boolean };
+	/** boosts feature: the outline worn, or "" for none. */
+	EquippedOutline: string;
+	/** boosts feature: the power worn, or "" for none. */
+	EquippedPower: string;
 	Settings: { [key: string]: boolean };
 }
 
