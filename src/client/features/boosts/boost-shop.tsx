@@ -11,7 +11,7 @@ import {
 	type BoostTier,
 	type Owned,
 } from "shared/features/boosts/boost-catalog";
-import { formatNumber } from "shared/format-number";
+import { formatMultiplier, formatNumber } from "shared/format-number";
 
 const PANEL_COLOR = Color3.fromRGB(30, 30, 30);
 const ROW_COLOR = Color3.fromRGB(48, 48, 52);
@@ -24,13 +24,13 @@ const DIM = Color3.fromRGB(80, 80, 86);
 const TABS: { kind: BoostKind; title: string; blurb: string }[] = [
 	{ kind: "outline", title: "Outlines", blurb: "Add Strength to every push-up" },
 	{ kind: "power", title: "Powers", blurb: "Multiply all your Strength" },
-	{ kind: "size", title: "Sizes", blurb: "Grow and multiply all your Strength, up to 3/4 the next giant's size" },
+	{ kind: "size", title: "Size Ups", blurb: "Grow and multiply all your Strength, up to 3/4 the next giant's size" },
 ];
 
 function statText(tier: BoostTier): string {
 	if ("bonusPerRep" in tier) return `+${formatNumber(tier.bonusPerRep)} Strength / rep`;
-	if ("scale" in tier) return `×${formatNumber(tier.multiplier)} Strength  ·  ${tier.scale}x size`;
-	return `×${formatNumber(tier.multiplier)} Strength`;
+	if ("scale" in tier) return `×${formatMultiplier(tier.multiplier)} Strength  ·  ${tier.scale}x size`;
+	return `×${formatMultiplier(tier.multiplier)} Strength`;
 }
 
 interface RowProps {

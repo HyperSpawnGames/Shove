@@ -1,5 +1,5 @@
 import React from "@rbxts/react";
-import { formatNumber } from "shared/format-number";
+import { formatMultiplier, formatNumber } from "shared/format-number";
 import { usePlayerAttribute } from "client/ui/hooks/use-player-attribute";
 import { usePlayerField } from "client/ui/hooks/use-player-field";
 import { usePunch } from "client/ui/hooks/use-punch";
@@ -59,7 +59,7 @@ export function TrainingHud({ onToggle }: TrainingHudProps) {
 				<textlabel
 					key="Label"
 					LayoutOrder={1}
-					Text={multiplier > 1 ? `STRENGTH  ×${formatNumber(multiplier)}` : "STRENGTH"}
+					Text={multiplier > 1 ? `STRENGTH  ×${formatMultiplier(multiplier)}` : "STRENGTH"}
 					Font={Enum.Font.GothamBold}
 					TextSize={14}
 					TextColor3={STRENGTH_GOLD}

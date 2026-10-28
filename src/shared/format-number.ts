@@ -19,3 +19,14 @@ export function formatNumber(value: number): string {
 	const text = truncated % 1 === 0 ? "%d".format(truncated) : "%.1f".format(truncated);
 	return `${sign}${text}${SUFFIXES[tier]}`;
 }
+
+/**
+ * A multiplier for display, without the "x": up to three significant figures
+ * below 1000 (1.25, 1.88, 315), so no part of a stacked multiplier is
+ * dropped; compact like formatNumber above that.
+ */
+export function formatMultiplier(value: number): string {
+	if (value !== value) return "1";
+	if (value >= 1000) return formatNumber(value);
+	return "%.3g".format(value);
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@rbxts/jest-globals";
-import { formatNumber } from "./format-number";
+import { formatMultiplier, formatNumber } from "./format-number";
 
 describe("formatNumber", () => {
 	it("prints small whole numbers as they are", () => {
@@ -30,5 +30,18 @@ describe("formatNumber", () => {
 
 	it("shows NaN as zero", () => {
 		expect(formatNumber(0 / 0)).toBe("0");
+	});
+});
+
+describe("formatMultiplier", () => {
+	it("keeps up to three significant figures", () => {
+		expect(formatMultiplier(1.25)).toBe("1.25");
+		expect(formatMultiplier(1.875)).toBe("1.88");
+		expect(formatMultiplier(2)).toBe("2");
+		expect(formatMultiplier(315)).toBe("315");
+	});
+
+	it("goes compact from a thousand", () => {
+		expect(formatMultiplier(5250)).toBe("5.2K");
 	});
 });
