@@ -1,13 +1,15 @@
 import React, { useState } from "@rbxts/react";
 import { Events } from "client/network";
+import { usePlayerAttribute } from "client/ui/hooks/use-player-attribute";
 import { usePlayerField } from "client/ui/hooks/use-player-field";
 import {
 	BoostKind,
+	fitsSizeCap,
 	ladder,
 	nextTier,
-	type OutlineTier,
+	SIZE_CAP_ATTRIBUTE,
+	type BoostTier,
 	type Owned,
-	type PowerTier,
 } from "shared/features/boosts/boost-catalog";
 import { formatNumber } from "shared/format-number";
 
@@ -22,26 +24,29 @@ const DIM = Color3.fromRGB(80, 80, 86);
 const TABS: { kind: BoostKind; title: string; blurb: string }[] = [
 	{ kind: "outline", title: "Outlines", blurb: "Add Strength to every push-up" },
 	{ kind: "power", title: "Powers", blurb: "Multiply all your Strength" },
+	{ kind: "size", title: "Sizes", blurb: "Grow and multiply all your Strength, up to 3/4 the next giant's size" },
 ];
 
-function statText(tier: OutlineTier | PowerTier): string {
-	return "bonusPerRep" in tier
-		? `+${formatNumber(tier.bonusPerRep)} Strength / rep`
-		: `×${formatNumber(tier.multiplier)} Strength`;
+function statText(tier: BoostTier): string {
+	if ("bonusPerRep" in tier) return `+${formatNumber(tier.bonusPerRep)} Strength / rep`;
+	if ("scale" in tier) return `×${formatNumber(tier.multiplier)} Strength  ·  ${tier.scale}x size`;
+	return `×${formatNumber(tier.multiplier)} Strength`;
 }
 
 interface RowProps {
 	kind: BoostKind;
-	tier: OutlineTier | PowerTier;
+	tier: BoostTier;
 	order: number;
 	owned: boolean;
 	worn: boolean;
 	forSale: boolean;
 	affordable: boolean;
+	/** False for a size bigger than the next giant allows yet. */
+	fits: boolean;
 }
 
 /** One tier: its colour, name and stat, and the one thing the player can do with it. */
-function TierRow({ kind, tier, order, owned, worn, forSale, affordable }: RowProps) {
+function TierRow({ kind, tier, order, owned, worn, forSale, affordable, fits }: RowProps) {
 	let text: string;
 	let color: Color3;
 	let onClick: (() => void) | undefined;
@@ -53,6 +58,9 @@ function TierRow({ kind, tier, order, owned, worn, forSale, affordable }: RowPro
 		text = "Wear";
 		color = WEAR_BLUE;
 		onClick = () => Events.requestEquipBoost.fire(kind, tier.id);
+	} else if (forSale && !fits) {
+		text = "🔒 Beat giants";
+		color = DIM;
 	} else if (forSale) {
 		text = `🏆 ${formatNumber(tier.price)}`;
 		color = affordable ? TROPHY_GOLD : DIM;
@@ -132,9 +140,13 @@ export function BoostShop() {
 	const powers = usePlayerField("Powers");
 	const wornOutline = usePlayerField("EquippedOutline");
 	const wornPower = usePlayerField("EquippedPower");
+	const sizes = usePlayerField("Sizes");
+	const wornSize = usePlayerField("EquippedSize");
+	const reportedCap = usePlayerAttribute(SIZE_CAP_ATTRIBUTE);
+	const sizeCap = typeIs(reportedCap, "number") ? reportedCap : 1;
 
-	const owned: Owned = (kind === "outline" ? outlines : powers) ?? {};
-	const worn = kind === "outline" ? wornOutline : wornPower;
+	const owned: Owned = (kind === "outline" ? outlines : kind === "power" ? powers : sizes) ?? {};
+	const worn = kind === "outline" ? wornOutline : kind === "power" ? wornPower : wornSize;
 	const forSale = nextTier(kind, owned);
 
 	return (
@@ -203,7 +215,7 @@ export function BoostShop() {
 						{TABS.map((tab) => (
 							<textbutton
 								key={tab.kind}
-								Size={new UDim2(0.5, -5, 1, 0)}
+								Size={new UDim2(1 / 3, -7, 1, 0)}
 								Text={tab.title}
 								Font={Enum.Font.GothamBlack}
 								TextSize={18}
@@ -249,6 +261,7 @@ export function BoostShop() {
 								worn={worn === tier.id}
 								forSale={forSale?.id === tier.id}
 								affordable={wins >= tier.price}
+								fits={fitsSizeCap(tier, sizeCap)}
 							/>
 						))}
 					</scrollingframe>

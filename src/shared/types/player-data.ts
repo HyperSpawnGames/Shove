@@ -20,6 +20,10 @@ export interface PlayerData {
 	EquippedOutline: string;
 	/** boosts feature: the power worn, or "" for none. */
 	EquippedPower: string;
+	/** boosts feature: size tiers bought, by id. */
+	Sizes: { [id: string]: boolean };
+	/** boosts feature: the size worn, or "" for none. */
+	EquippedSize: string;
 	Settings: { [key: string]: boolean };
 }
 

@@ -1,15 +1,15 @@
 import { Controller, OnStart } from "@flamework/core";
 import { Players, RunService } from "@rbxts/services";
-import { POWER_ATTRIBUTE } from "shared/features/boosts/boost-catalog";
+import { POWER_ATTRIBUTE, SIZE_ATTRIBUTE } from "shared/features/boosts/boost-catalog";
 import { attachPower, PowerEffect, R15_LIMBS, R6_LIMBS } from "./power-effects";
 
 const LIMBS = new Set([...R15_LIMBS, ...R6_LIMBS]);
 
 /**
  * Draws the power every body wears, each player's included, from the id the
- * server puts in its POWER_ATTRIBUTE. Redraws when the power changes or a
- * hand or foot is replaced (the avatar's own are swapped in just after
- * spawning), and drops the effect with the body.
+ * server puts in its POWER_ATTRIBUTE, at the size in its SIZE_ATTRIBUTE.
+ * Redraws when either changes or a hand or foot is replaced (the avatar's
+ * own are swapped in just after spawning), and drops the effect with the body.
  */
 @Controller({})
 export class PowerEffectsController implements OnStart {
@@ -39,6 +39,8 @@ export class PowerEffectsController implements OnStart {
 
 		redraw();
 		character.GetAttributeChangedSignal(POWER_ATTRIBUTE).Connect(redraw);
+		// A size change resizes the body, and the power with it.
+		character.GetAttributeChangedSignal(SIZE_ATTRIBUTE).Connect(redraw);
 		character.ChildAdded.Connect((child) => {
 			if (LIMBS.has(child.Name) && character.GetAttribute(POWER_ATTRIBUTE) !== undefined) redraw();
 		});

@@ -11,5 +11,7 @@ export const DEFAULT_PLAYER_DATA: PlayerData = {
 	Powers: {},
 	EquippedOutline: "",
 	EquippedPower: "",
+	Sizes: {},
+	EquippedSize: "",
 	Settings: {},
 };

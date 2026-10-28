@@ -1,5 +1,15 @@
 import { describe, expect, it } from "@rbxts/jest-globals";
-import { buyPrice, canWear, findOutline, findPower, nextTier, OUTLINES, POWERS } from "./boost-catalog";
+import {
+	buyPrice,
+	canWear,
+	findOutline,
+	findPower,
+	fitsSizeCap,
+	nextTier,
+	OUTLINES,
+	POWERS,
+	SIZES,
+} from "./boost-catalog";
 
 describe("the ladders", () => {
 	it("get dearer and stronger at every tier", () => {
@@ -20,8 +30,8 @@ describe("the ladders", () => {
 
 	it("give every tier its own id", () => {
 		const ids = new Set<string>();
-		for (const tier of [...OUTLINES, ...POWERS]) ids.add(tier.id);
-		expect(ids.size()).toBe(OUTLINES.size() + POWERS.size());
+		for (const tier of [...OUTLINES, ...POWERS, ...SIZES]) ids.add(tier.id);
+		expect(ids.size()).toBe(OUTLINES.size() + POWERS.size() + SIZES.size());
 		expect(findOutline("Gold")?.bonusPerRep).toBe(250);
 		expect(findPower("Ember")?.multiplier).toBe(2);
 		expect(findOutline("Ember")).toBe(undefined);
@@ -71,5 +81,28 @@ describe("canWear", () => {
 	it("refuses a tier not bought", () => {
 		expect(canWear("Gold", {})).toBe(false);
 		expect(canWear("Gold", { Gold: false })).toBe(false);
+	});
+});
+
+describe("sizes", () => {
+	it("grow and multiply more at every tier", () => {
+		for (let i = 1; i < SIZES.size(); i++) {
+			expect(SIZES[i].price).toBeGreaterThan(SIZES[i - 1].price);
+			expect(SIZES[i].multiplier).toBeGreaterThan(SIZES[i - 1].multiplier);
+			expect(SIZES[i].scale).toBeGreaterThan(SIZES[i - 1].scale);
+		}
+		for (const size of SIZES) expect(size.scale > 1 && size.multiplier > 1).toBe(true);
+	});
+
+	it("cannot be bought bigger than the size cap", () => {
+		const first = SIZES[0];
+		expect(buyPrice("size", first.id, {}, math.huge, first.scale)).toBe(first.price);
+		expect(buyPrice("size", first.id, {}, math.huge, first.scale - 0.01)).toBe(undefined);
+		expect(fitsSizeCap(first, first.scale - 0.01)).toBe(false);
+	});
+
+	it("never caps outlines or powers", () => {
+		expect(buyPrice("power", POWERS[0].id, {}, math.huge, 0)).toBe(POWERS[0].price);
+		expect(fitsSizeCap(OUTLINES[0], 0)).toBe(true);
 	});
 });

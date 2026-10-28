@@ -1,4 +1,5 @@
 import { Workspace } from "@rbxts/services";
+import { SIZE_ATTRIBUTE } from "shared/features/boosts/boost-catalog";
 import { boltPoints } from "./lightning";
 
 /** Engine particle textures, so no effect needs an uploaded asset. */
@@ -429,17 +430,18 @@ function colorSequence(colors: Color3[]): ColorSequence {
 	return new ColorSequence(colors.map((color, i) => new ColorSequenceKeypoint(i / (colors.size() - 1), color)));
 }
 
-function emitter(layer: Layer): ParticleEmitter {
+/** A layer's particles, sized for a body grown `scale` times: bigger, faster and flung farther. */
+function emitter(layer: Layer, scale: number): ParticleEmitter {
 	const particles = new Instance("ParticleEmitter");
 	particles.Texture = layer.texture;
 	particles.Color = colorSequence(layer.colors);
-	particles.Size = sequence(layer.sizes);
+	particles.Size = sequence(layer.sizes.map((size) => size * scale));
 	particles.Transparency = sequence(layer.fade);
 	particles.Lifetime = new NumberRange(layer.lifetime[0], layer.lifetime[1]);
 	particles.Rate = layer.rate;
-	particles.Speed = new NumberRange(layer.speed[0], layer.speed[1]);
+	particles.Speed = new NumberRange(layer.speed[0] * scale, layer.speed[1] * scale);
 	particles.SpreadAngle = new Vector2(180, 180);
-	particles.Acceleration = layer.acceleration ?? Vector3.zero;
+	particles.Acceleration = (layer.acceleration ?? Vector3.zero).mul(scale);
 	particles.Drag = layer.drag ?? 0;
 	particles.LightEmission = layer.lightEmission ?? 1;
 	particles.LightInfluence = layer.lightInfluence ?? 0;
@@ -497,6 +499,9 @@ export interface PowerEffect {
 export function attachPower(character: Model, powerId: string): PowerEffect | undefined {
 	const recipe = RECIPES[powerId];
 	if (recipe === undefined) return undefined;
+	// A grown body (a size boost) wears its power to scale.
+	const grown = character.GetAttribute(SIZE_ATTRIBUTE);
+	const scale = typeIs(grown, "number") ? grown : 1;
 
 	const owned: Instance[] = [];
 	const anchors: Attachment[] = [];
@@ -505,7 +510,7 @@ export function attachPower(character: Model, powerId: string): PowerEffect | un
 		anchor.Name = "PowerEffect";
 		// An R6 limb is a whole arm or leg; the power sits at its hand or foot end.
 		if (r6) anchor.Position = new Vector3(0, -part.Size.Y / 2, 0);
-		for (const layer of recipe.layers) emitter(layer).Parent = anchor;
+		for (const layer of recipe.layers) emitter(layer, scale).Parent = anchor;
 		anchor.Parent = part;
 		owned.push(anchor);
 		anchors.push(anchor);
@@ -515,7 +520,7 @@ export function attachPower(character: Model, powerId: string): PowerEffect | un
 	const light = new Instance("PointLight");
 	light.Color = recipe.light.color;
 	light.Brightness = recipe.light.brightness;
-	light.Range = recipe.light.range;
+	light.Range = math.min(recipe.light.range * scale, 60);
 	light.Shadows = false;
 	light.Parent = chest;
 	owned.push(light);
@@ -531,7 +536,8 @@ export function attachPower(character: Model, powerId: string): PowerEffect | un
 		// Enough bolts that every limb can have two lit at once.
 		for (let i = 0; i < anchors.size() * 2; i++) {
 			const segments: Part[] = [];
-			for (let s = 0; s < arcs.segments; s++) segments.push(boltSegment(arcs.color, arcs.thickness, boltFolder));
+			for (let s = 0; s < arcs.segments; s++)
+				segments.push(boltSegment(arcs.color, arcs.thickness * scale, boltFolder));
 			bolts.push({ segments, litUntil: 0 });
 		}
 	}
@@ -545,13 +551,13 @@ export function attachPower(character: Model, powerId: string): PowerEffect | un
 		const bolt = bolts.find((candidate) => candidate.litUntil <= clock);
 		if (bolt === undefined) return;
 		const direction = rng.NextUnitVector();
-		const to = from.add(direction.mul(rng.NextNumber(arcs.reach[0], arcs.reach[1])));
-		const points = boltPoints(from, to, arcs.segments, arcs.jitter, rng);
+		const to = from.add(direction.mul(rng.NextNumber(arcs.reach[0], arcs.reach[1]) * scale));
+		const points = boltPoints(from, to, arcs.segments, arcs.jitter * scale, rng);
 		bolt.segments.forEach((segment, i) => {
 			const a = points[i];
 			const b = points[i + 1];
 			const length = b.sub(a).Magnitude;
-			segment.Size = new Vector3(arcs.thickness, arcs.thickness, math.max(length, 0.05));
+			segment.Size = new Vector3(arcs.thickness * scale, arcs.thickness * scale, math.max(length, 0.05));
 			segment.CFrame = CFrame.lookAt(a.add(b).div(2), b);
 			segment.Transparency = 0;
 		});
