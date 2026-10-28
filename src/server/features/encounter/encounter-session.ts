@@ -42,6 +42,9 @@ import {
 import { ArenaProgress } from "./arena-progress";
 import { GiantDefinition, GIANTS } from "./giants";
 
+/** A normal body's HumanoidRootPart height; a grown body's root grows with it. */
+const NORMAL_ROOT_HEIGHT = 2;
+
 interface Fight {
 	giant: GiantDefinition;
 	/** The giant's place on the staircase. */
@@ -109,7 +112,9 @@ export class EncounterSession extends BaseComponent<{}, Player> implements OnSta
 		const root = humanoid?.RootPart;
 		if (body === undefined || humanoid === undefined || root === undefined || humanoid.Health <= 0) return;
 
-		const arena = this.arenas.build(this.instance, giant, humanoid.HipHeight + root.Size.Y / 2);
+		// A normal root is 2 studs tall, so its height says how grown the player is (a size boost).
+		const playerScale = math.max(root.Size.Y / NORMAL_ROOT_HEIGHT, 1);
+		const arena = this.arenas.build(this.instance, giant, humanoid.HipHeight + root.Size.Y / 2, playerScale);
 		if (arena === undefined) return;
 
 		this.training.stop();

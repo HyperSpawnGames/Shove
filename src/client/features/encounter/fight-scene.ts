@@ -361,8 +361,9 @@ export class FightScene {
 	}
 
 	private placeCamera(character: Model): void {
-		const giantHeight = this.giant!.GetExtentsSize().Y;
 		const characterHeight = character.GetExtentsSize().Y;
+		// Frame the taller fighter: a grown player can outsize an old giant.
+		const giantHeight = math.max(this.giant!.GetExtentsSize().Y, characterHeight);
 		const axis = this.playerStart.LookVector;
 		const side = axis.Cross(new Vector3(0, 1, 0));
 		const middle = this.playerStart.Position.Lerp(this.giantStart.Position, 0.5);

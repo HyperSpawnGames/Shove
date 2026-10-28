@@ -43,13 +43,16 @@ export class ArenaService implements OnStart {
 	/**
 	 * Builds an arena for `player` against `giant`, or undefined when the
 	 * giant's prefab is missing. `rootHeight` is how far the player's root
-	 * sits above their feet. Release it with destroy().
+	 * sits above their feet; `playerScale` is how many times a normal body's
+	 * size the player is (a grown player can outsize an old giant), so the
+	 * platform and both reaches fit the bigger of the two. Release it with destroy().
 	 */
-	public build(player: Player, giant: GiantDefinition, rootHeight: number): Arena | undefined {
+	public build(player: Player, giant: GiantDefinition, rootHeight: number, playerScale = 1): Arena | undefined {
 		const slot = this.acquireSlot();
 		const center = ARENA_ORIGIN.add(new Vector3(slot * ARENA_SPACING, 0, 0));
 		const right = new Vector3(1, 0, 0);
-		const halfLength = ARENA_BASE_HALF_LENGTH + giant.scale * ARENA_HALF_LENGTH_PER_SCALE;
+		const biggest = math.max(giant.scale, playerScale);
+		const halfLength = ARENA_BASE_HALF_LENGTH + biggest * ARENA_HALF_LENGTH_PER_SCALE;
 
 		const model = new Instance("Model");
 		model.Name = tostring(player.UserId);
@@ -88,11 +91,11 @@ export class ArenaService implements OnStart {
 		giantModel.Name = ARENA_GIANT_NAME;
 		startIdle(giantModel);
 
-		const playerRoot = center.sub(right.mul(FIGHTER_REACH)).add(new Vector3(0, rootHeight, 0));
+		const playerRoot = center.sub(right.mul(FIGHTER_REACH * playerScale)).add(new Vector3(0, rootHeight, 0));
 		const playerStart = CFrame.lookAt(playerRoot, playerRoot.add(right));
 
 		// Both fighters stop a reach short of the far edge, so the loser goes over it.
-		const travel = halfLength - FIGHTER_REACH * giant.scale - 1;
+		const travel = halfLength - FIGHTER_REACH * biggest - 1;
 		model.SetAttribute(ArenaAttribute.PlayerStart, playerStart);
 		model.SetAttribute(ArenaAttribute.GiantStart, giantModel.GetPivot());
 		model.SetAttribute(ArenaAttribute.TravelLength, math.max(travel, 4));
