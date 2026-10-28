@@ -63,6 +63,11 @@ function buildPart(parent: Instance, spec: PartSpec): Part {
 	if (spec.transparency !== undefined) part.Transparency = spec.transparency;
 	part.TopSurface = Enum.SurfaceType.Smooth;
 	part.BottomSurface = Enum.SurfaceType.Smooth;
+	if (spec.ellipsoid) {
+		const mesh = new Instance("SpecialMesh");
+		mesh.MeshType = Enum.MeshType.Sphere;
+		mesh.Parent = part;
+	}
 	if (spec.effect !== undefined) attachEffect(part, spec.effect);
 	part.Parent = parent;
 	return part;
