@@ -4,10 +4,27 @@ import { pauseAnimate } from "client/util/pause-animate";
 import { RigPoser } from "client/util/rig-poser";
 import { TrainingAttribute } from "shared/features/training/training-attributes";
 import { PushUpPose } from "./push-up-pose";
-import { PUSH_UP_ANIMATION_ID } from "./training-config";
+import { MOVE_DEADZONE, PUSH_UP_ANIMATION_ID } from "./training-config";
 
 /** Seconds to get down into the plank, or back up. */
 const GET_DOWN_SECONDS = 0.35;
+/**
+ * Horizontal speed, in studs per second, at which another player's body is
+ * walking rather than doing a push-up (which shifts the root a little).
+ */
+const WALKING_SPEED = 8;
+
+/**
+ * Whether a body has set off walking: its own player's movement input for the
+ * local body, which arrives before it moves; its speed for anyone else's.
+ */
+function isWalking(player: Player, character: Model): boolean {
+	const humanoid = character.FindFirstChildOfClass("Humanoid");
+	if (humanoid === undefined) return false;
+	if (player === Players.LocalPlayer) return humanoid.MoveDirection.Magnitude > MOVE_DEADZONE;
+	const root = humanoid.RootPart;
+	return root !== undefined && root.AssemblyLinearVelocity.mul(new Vector3(1, 0, 1)).Magnitude > WALKING_SPEED;
+}
 
 interface Body {
 	character: Model;
@@ -29,6 +46,10 @@ interface Body {
  * animation replicates by itself. The local player's own Animate pauses
  * while their push-ups run, so an animation pack's idle cannot bend the pose;
  * the tracks it stops stop for everyone watching.
+ *
+ * A body that sets off walking stands straight up at once, without waiting
+ * for the server to end the session or for the get-up: a plank moving at
+ * walking speed, with Animate still paused, hovers along the ground.
  */
 @Controller({})
 export class PushUpAnimator implements OnStart {
@@ -74,7 +95,11 @@ export class PushUpAnimator implements OnStart {
 	private step(dt: number): void {
 		const now = os.clock();
 		for (const [player, body] of this.bodies) {
-			if (body.character.Parent === undefined || player.Character !== body.character) {
+			if (
+				body.character.Parent === undefined ||
+				player.Character !== body.character ||
+				isWalking(player, body.character)
+			) {
 				this.release(player, body);
 				continue;
 			}

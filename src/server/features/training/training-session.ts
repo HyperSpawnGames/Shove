@@ -8,6 +8,7 @@ import {
 	BASE_ARM_STRENGTH,
 	BASE_PET_MULTIPLIER,
 	BASE_SECONDS_PER_REP,
+	TRAINING_MAX_START_SPEED,
 	TRAINING_SPOT_TOLERANCE,
 } from "./training-config";
 import { canStartTraining, hasLeftTrainingSpot, strengthPerRep, totalBonus } from "./training-rules";
@@ -90,6 +91,9 @@ export class TrainingSession extends BaseComponent<{}, Player> implements OnStar
 			alive: humanoid !== undefined && humanoid.Health > 0 && root !== undefined,
 			onGround: humanoid !== undefined && humanoid.FloorMaterial !== Enum.Material.Air,
 			held: root?.Anchored === true,
+			moving:
+				root !== undefined &&
+				root.AssemblyLinearVelocity.mul(new Vector3(1, 0, 1)).Magnitude > TRAINING_MAX_START_SPEED,
 		});
 		if (!allowed || root === undefined) return;
 

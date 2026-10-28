@@ -4,5 +4,7 @@ export const BASE_ARM_STRENGTH = 1;
 export const BASE_PET_MULTIPLIER = 1;
 /** Seconds per rep with no aura (GDD variable T); the aura ladder runs 0.90 down to 0.40. */
 export const BASE_SECONDS_PER_REP = 0.9;
+/** Horizontal speed, in studs per second, above which a body counts as walking and may not start training. */
+export const TRAINING_MAX_START_SPEED = 2;
 /** Horizontal studs the body may drift from where training started before a rep is refused. */
 export const TRAINING_SPOT_TOLERANCE = 3;
