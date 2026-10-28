@@ -1,5 +1,6 @@
 import { BaseComponent, Component } from "@flamework/components";
 import { PlayerDataNode } from "server/services/player/player-data-node";
+import Signal from "@rbxts/signal";
 import { PLAYER_LOADED_TAG } from "server/services/player/player-tags";
 import { canChallenge, clearedAfterWin } from "./progress-rules";
 
@@ -10,6 +11,9 @@ import { canChallenge, clearedAfterWin } from "./progress-rules";
  */
 @Component({ tag: PLAYER_LOADED_TAG })
 export class ArenaProgress extends BaseComponent<{}, Player> {
+	/** Fires with the new count when a first victory opens the next giant. */
+	public readonly clearedChanged = new Signal<(cleared: number) => void>();
+
 	constructor(private readonly dataNode: PlayerDataNode) {
 		super();
 	}
@@ -26,6 +30,13 @@ export class ArenaProgress extends BaseComponent<{}, Player> {
 	public recordWin(giantIndex: number): void {
 		const current = this.getHighestCleared();
 		const cleared = clearedAfterWin(giantIndex, current);
-		if (cleared !== current) this.dataNode.set("HighestCleared", cleared);
+		if (cleared === current) return;
+		this.dataNode.set("HighestCleared", cleared);
+		this.clearedChanged.Fire(cleared);
+	}
+
+	override destroy(): void {
+		this.clearedChanged.Destroy();
+		super.destroy();
 	}
 }
