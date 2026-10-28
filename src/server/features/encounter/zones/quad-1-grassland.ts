@@ -1,5 +1,6 @@
-import { GRASSLAND_PART_BUDGET, planGrassland, terraceColor } from "./quad-1/plan";
+import { extraClearZones, GRASSLAND_PART_BUDGET, planGrassland, terraceColor } from "./quad-1/plan";
 import type { PartSpec } from "./quad-1/part-spec";
+import { planSpawnMeadow } from "./quad-1/spawn-meadow";
 import type { ZoneBuilder } from "./types";
 
 const SHAPES = {
@@ -73,7 +74,9 @@ function buildPart(spec: PartSpec, parent: Instance): void {
  * Grass terraces in two alternating greens, each with a dirt path up its
  * lane, a split-rail fence, low round trees, bushes, rocks and wildflowers;
  * a signpost at the foot pointing up the climb; and a meadow of rolling
- * hills either side. Placement is planned in quad-1/plan.ts.
+ * hills either side; and, when the quad starts on the ground, the spawn
+ * meadow around the spawn pad, so the first thing a player sees is already
+ * the Grassland. Placement is planned in quad-1/plan.ts and spawn-meadow.ts.
  */
 export const buildGrasslandZone: ZoneBuilder = (context) => {
 	for (const part of context.terraceParts) {
@@ -84,6 +87,7 @@ export const buildGrasslandZone: ZoneBuilder = (context) => {
 		part.Color = terraceColor(math.max(index, 0));
 	}
 
+	const first = context.terraces[0];
 	const plan = planGrassland(context);
 	if (plan.size() > GRASSLAND_PART_BUDGET)
 		warn(`[push-a-giant] Grassland planned ${plan.size()} parts; building the first ${GRASSLAND_PART_BUDGET}`);
@@ -99,4 +103,13 @@ export const buildGrasslandZone: ZoneBuilder = (context) => {
 		}
 		buildPart(spec, folder);
 	});
+
+	// The spawn meadow has its own budget (enforced in its plan), so it never crowds out the climb.
+	if (first !== undefined && first.floorY === 0) {
+		const meadow = new Instance("Folder");
+		meadow.Name = "SpawnMeadow";
+		meadow.Parent = context.folder;
+		const keepClear = [...context.clearZones, ...extraClearZones(context)];
+		for (const spec of planSpawnMeadow(first, keepClear)) buildPart(spec, meadow);
+	}
 };
