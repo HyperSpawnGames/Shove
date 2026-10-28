@@ -14,7 +14,7 @@ export const GRASSLAND_PART_BUDGET = 600;
 /** Same seed, same meadow: the world is identical every run. */
 const SEED = 1;
 /** Half the side of the 512-stud baseplate centred on the spawn. */
-const BASEPLATE_HALF = 256;
+export const BASEPLATE_HALF = 256;
 /** Half the walking lane laneClearZone keeps clear down a terrace's middle. */
 const LANE_HALF = 10;
 /** The staircase's ramps are 16 wide; their keep-clear corridor adds room either side. */
@@ -27,6 +27,16 @@ const MEADOW_REACH = 110;
 
 const TERRACE_GREENS = [Color3.fromRGB(104, 172, 72), Color3.fromRGB(92, 160, 64)];
 const MEADOW_GREEN = Color3.fromRGB(96, 166, 66);
+
+/** Half the width of the meadow either side of the climb: the widest terrace plus the hills' reach. */
+export function meadowHalfWidth(terraces: readonly TerraceLayout[]): number {
+	return terraces.reduce((most, terrace) => math.max(most, terrace.width / 2), 0) + MEADOW_REACH;
+}
+
+/** Where the meadow's ground ends behind the top terrace: past the baseplate's far edge when the climb outruns it. */
+export function meadowGroundEnd(terraces: readonly TerraceLayout[]): number {
+	return terraces[terraces.size() - 1].backZ - RAMP_RUN / 2;
+}
 
 /** A terrace's colour: neighbouring terraces alternate two greens so each step reads. */
 export function terraceColor(index: number): Color3 {
@@ -226,11 +236,10 @@ function dressMeadow(layout: GrasslandLayout, keepOut: readonly ClearZone[]): Pa
 	const terraces = layout.terraces;
 	const first = terraces[0];
 	const last = terraces[terraces.size() - 1];
-	const widest = terraces.reduce((most, terrace) => math.max(most, terrace.width / 2), 0);
-	const meadowHalf = widest + MEADOW_REACH;
+	const meadowHalf = meadowHalfWidth(terraces);
 	const parts: PartSpec[] = [];
 
-	const groundEnd = last.backZ - RAMP_RUN / 2;
+	const groundEnd = meadowGroundEnd(terraces);
 	if (groundEnd < -BASEPLATE_HALF) {
 		const thickness = 16;
 		parts.push({

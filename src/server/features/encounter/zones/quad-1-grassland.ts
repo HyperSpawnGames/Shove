@@ -1,4 +1,5 @@
 import { extraClearZones, GRASSLAND_PART_BUDGET, planGrassland, terraceColor } from "./quad-1/plan";
+import { planBoundaryWalls } from "./quad-1/boundary-walls";
 import type { PartSpec } from "./quad-1/part-spec";
 import { planSpawnMeadow } from "./quad-1/spawn-meadow";
 import type { ZoneBuilder } from "./types";
@@ -76,7 +77,8 @@ function buildPart(spec: PartSpec, parent: Instance): void {
  * a signpost at the foot pointing up the climb; and a meadow of rolling
  * hills either side; and, when the quad starts on the ground, the spawn
  * meadow around the spawn pad, so the first thing a player sees is already
- * the Grassland. Placement is planned in quad-1/plan.ts and spawn-meadow.ts.
+ * the Grassland, ringed by mega cobblestone walls. Placement is planned in
+ * quad-1/plan.ts, spawn-meadow.ts and boundary-walls.ts.
  */
 export const buildGrasslandZone: ZoneBuilder = (context) => {
 	for (const part of context.terraceParts) {
@@ -111,5 +113,10 @@ export const buildGrasslandZone: ZoneBuilder = (context) => {
 		meadow.Parent = context.folder;
 		const keepClear = [...context.clearZones, ...extraClearZones(context)];
 		for (const spec of planSpawnMeadow(first, keepClear)) buildPart(spec, meadow);
+
+		const walls = new Instance("Folder");
+		walls.Name = "BoundaryWalls";
+		walls.Parent = context.folder;
+		for (const spec of planBoundaryWalls(context.terraces)) buildPart(spec, walls);
 	}
 };
