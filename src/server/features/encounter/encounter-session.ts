@@ -151,7 +151,11 @@ export class EncounterSession extends BaseComponent<{}, Player> implements OnSta
 		fight.bucket = bucket;
 		if (!accepted) return;
 
-		const ratio = strengthRatio(this.strength.getStrength(), fight.giant.recommendedStrength, STRENGTH_RATIO_OFFSET);
+		const ratio = strengthRatio(
+			this.strength.getEffectiveStrength(),
+			fight.giant.recommendedStrength,
+			STRENGTH_RATIO_OFFSET,
+		);
 		fight.meter += shoveGain(ratio, BASE_SHOVE_GAIN, MAX_SHOVE_GAIN);
 		this.settle(fight);
 	}

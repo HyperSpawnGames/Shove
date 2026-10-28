@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@rbxts/jest-globals";
-import { canStartTraining, hasLeftTrainingSpot, strengthPerRep } from "./training-rules";
+import { canStartTraining, hasLeftTrainingSpot, strengthPerRep, totalBonus, totalMultiplier } from "./training-rules";
 
 describe("strengthPerRep", () => {
 	it("multiplies arm strength by the pet multiplier", () => {
@@ -48,5 +48,33 @@ describe("hasLeftTrainingSpot", () => {
 
 	it("ignores vertical movement", () => {
 		expect(hasLeftTrainingSpot(origin, new Vector3(0, 50, 0), 3)).toBe(false);
+	});
+});
+
+describe("totalBonus", () => {
+	it("adds every bonus, and none adds nothing", () => {
+		expect(totalBonus(new Map())).toBe(0);
+		expect(
+			totalBonus(
+				new Map([
+					["outline", 15],
+					["event", 5],
+				]),
+			),
+		).toBe(20);
+	});
+});
+
+describe("totalMultiplier", () => {
+	it("multiplies every multiplier, and none leaves Strength as it is", () => {
+		expect(totalMultiplier(new Map())).toBe(1);
+		expect(
+			totalMultiplier(
+				new Map([
+					["power", 3],
+					["event", 2],
+				]),
+			),
+		).toBe(6);
 	});
 });

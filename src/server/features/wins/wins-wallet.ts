@@ -28,6 +28,19 @@ export class WinsWallet extends BaseComponent<{}, Player> {
 		this.winsChanged.Fire(total);
 	}
 
+	/**
+	 * Takes `amount` Wins if the player has that many, and says whether it
+	 * did. Zero, negative and NaN amounts are refused.
+	 */
+	public spendWins(amount: number): boolean {
+		if (!(amount > 0) || this.getWins() < amount) return false;
+
+		const total = this.getWins() - amount;
+		this.dataNode.set("Wins", total);
+		this.winsChanged.Fire(total);
+		return true;
+	}
+
 	override destroy(): void {
 		this.winsChanged.Destroy();
 		super.destroy();

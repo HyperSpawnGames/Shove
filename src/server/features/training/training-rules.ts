@@ -3,6 +3,20 @@ export function strengthPerRep(armStrength: number, petMultiplier: number): numb
 	return armStrength * petMultiplier;
 }
 
+/** The sum of a set of named bonuses; none sums to 0. */
+export function totalBonus(bonuses: ReadonlyMap<string, number>): number {
+	let total = 0;
+	for (const [, bonus] of bonuses) total += bonus;
+	return total;
+}
+
+/** The product of a set of named multipliers; none multiplies by 1. */
+export function totalMultiplier(multipliers: ReadonlyMap<string, number>): number {
+	let total = 1;
+	for (const [, multiplier] of multipliers) total *= multiplier;
+	return total;
+}
+
 export interface TrainingStartState {
 	training: boolean;
 	alive: boolean;

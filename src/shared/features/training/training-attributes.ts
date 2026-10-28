@@ -9,4 +9,6 @@ export const TrainingAttribute = {
 	StrengthPerRep: "StrengthPerRep",
 	/** number: seconds one rep takes right now. */
 	SecondsPerRep: "SecondsPerRep",
+	/** number: what saved Strength is multiplied by; the HUD shows the product. */
+	StrengthMultiplier: "StrengthMultiplier",
 } as const;

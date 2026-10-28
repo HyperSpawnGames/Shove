@@ -4,7 +4,7 @@ import { LeaderstatsService } from "server/services/leaderstats-service";
 import { PLAYER_LOADED_TAG } from "server/services/player/player-tags";
 import { StrengthStat } from "./strength-stat";
 
-/** Mirrors Strength into the player-list leaderstats column. */
+/** Mirrors effective Strength into the player-list leaderstats column. */
 @Component({ tag: PLAYER_LOADED_TAG })
 export class StrengthLeaderstats extends BaseComponent<{}, Player> implements OnStart {
 	private connection?: RBXScriptConnection;
@@ -17,7 +17,7 @@ export class StrengthLeaderstats extends BaseComponent<{}, Player> implements On
 	}
 
 	onStart(): void {
-		const stat = this.leaderstatsService.addStat(this.instance, "Strength", this.strength.getStrength());
+		const stat = this.leaderstatsService.addStat(this.instance, "Strength", this.strength.getEffectiveStrength());
 
 		this.connection = this.strength.strengthChanged.Connect((total) => {
 			stat.Value = total;

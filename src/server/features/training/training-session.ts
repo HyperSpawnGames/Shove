@@ -10,7 +10,7 @@ import {
 	BASE_SECONDS_PER_REP,
 	TRAINING_SPOT_TOLERANCE,
 } from "./training-config";
-import { canStartTraining, hasLeftTrainingSpot, strengthPerRep } from "./training-rules";
+import { canStartTraining, hasLeftTrainingSpot, strengthPerRep, totalBonus } from "./training-rules";
 import { StrengthStat } from "./strength-stat";
 
 interface Session {
@@ -32,6 +32,8 @@ interface Session {
 @Component({ tag: PLAYER_LOADED_TAG })
 export class TrainingSession extends BaseComponent<{}, Player> implements OnStart {
 	private session?: Session;
+	/** Strength other features add to every rep (a worn outline, say), by their name. */
+	private readonly repBonuses = new Map<string, number>();
 	private characterConnection?: RBXScriptConnection;
 
 	constructor(
@@ -52,9 +54,20 @@ export class TrainingSession extends BaseComponent<{}, Player> implements OnStar
 		return this.session !== undefined;
 	}
 
-	/** Strength one rep grants right now. Arms and pets plug in here. */
+	/** Strength one rep grants right now: base arm strength plus every rep bonus, times the pet multiplier. */
 	public getStrengthPerRep(): number {
-		return strengthPerRep(BASE_ARM_STRENGTH, BASE_PET_MULTIPLIER);
+		return strengthPerRep(BASE_ARM_STRENGTH + totalBonus(this.repBonuses), BASE_PET_MULTIPLIER);
+	}
+
+	/**
+	 * Sets the Strength a feature adds to every rep, under its own name;
+	 * undefined removes it. Negative amounts and NaN are ignored.
+	 */
+	public setRepBonus(source: string, bonus: number | undefined): void {
+		if (bonus === undefined) this.repBonuses.delete(source);
+		else if (bonus >= 0) this.repBonuses.set(source, bonus);
+		else return;
+		this.publishRates();
 	}
 
 	/** Seconds one rep takes right now. Auras plug in here. */
@@ -118,7 +131,8 @@ export class TrainingSession extends BaseComponent<{}, Player> implements OnStar
 
 		const gained = this.getStrengthPerRep();
 		this.strength.addStrength(gained);
-		Events.trainingRepCompleted.fire(this.instance, gained);
+		// The popup shows what the HUD total rose by: the gain times every multiplier.
+		Events.trainingRepCompleted.fire(this.instance, gained * this.strength.getMultiplier());
 		this.scheduleRep(session);
 	}
 
