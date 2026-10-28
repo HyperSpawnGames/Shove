@@ -74,7 +74,7 @@ export class PlayerCharacter extends BaseComponent<{}, Player> implements OnStar
 			return;
 		}
 
-		this.diedConnection = humanoid.Died.Connect(() => this.scheduleRespawn());
+		this.diedConnection = humanoid.Died.Connect(() => this.scheduleRespawn(character));
 		this.applyWalkSpeed(humanoid);
 		this.characterAdded.Fire(character);
 	}
@@ -83,12 +83,16 @@ export class PlayerCharacter extends BaseComponent<{}, Player> implements OnStar
 		humanoid.WalkSpeed = this.getWalkSpeed();
 	}
 
-	private scheduleRespawn(): void {
+	/**
+	 * Respawns after the dead body's wait, unless a new body has arrived since.
+	 * Health cannot tell: a fall into the void destroys the body's parts and
+	 * breaks the neck, which fires Died while the Humanoid's health is still
+	 * above zero.
+	 */
+	private scheduleRespawn(dead: Model): void {
 		task.delay(Players.RespawnTime, () => {
 			if (this.destroyed || !this.instance.IsDescendantOf(Players)) return;
-
-			const humanoid = this.instance.Character?.FindFirstChildOfClass("Humanoid");
-			if (humanoid !== undefined && humanoid.Health > 0) return; // already alive again
+			if (this.character !== dead) return; // already alive again
 
 			this.spawn();
 		});
