@@ -13,7 +13,9 @@ import { PLAYER_LOADED_TAG } from "./player-tags";
  * exists, and connect characterAdded for the next one.
  *
  * Walk speed is a per-player setting this component owns: it is applied to
- * every body as it arrives, so a respawn never resets it.
+ * every body as it arrives, so a respawn never resets it. A feature sets the
+ * base the player has earned (setBaseWalkSpeed); setWalkSpeed overrides it
+ * outright (a dev command), and clearing the override returns to the base.
  */
 @Component({ tag: PLAYER_LOADED_TAG })
 export class PlayerCharacter extends BaseComponent<{}, Player> implements OnStart {
@@ -23,8 +25,10 @@ export class PlayerCharacter extends BaseComponent<{}, Player> implements OnStar
 	private characterConnection?: RBXScriptConnection;
 	private diedConnection?: RBXScriptConnection;
 	private destroyed = false;
-	/** Walk speed applied to every body; undefined means StarterPlayer's default. */
+	/** Walk speed applied to every body over the base; undefined means none. */
 	private walkSpeed?: number;
+	/** Walk speed the player has earned; undefined means StarterPlayer's default. */
+	private baseWalkSpeed?: number;
 
 	onStart(): void {
 		this.characterConnection = this.instance.CharacterAdded.Connect((character) => this.onCharacterAdded(character));
@@ -42,17 +46,30 @@ export class PlayerCharacter extends BaseComponent<{}, Player> implements OnStar
 	}
 
 	/**
-	 * Sets the walk speed of this player's current body and every one that
-	 * spawns after it. Pass undefined to return to StarterPlayer's default.
+	 * Overrides the walk speed of this player's current body and every one
+	 * that spawns after it. Pass undefined to return to the base speed.
 	 */
 	public setWalkSpeed(speed: number | undefined): void {
 		this.walkSpeed = speed;
-		const humanoid = this.character?.FindFirstChildOfClass("Humanoid");
-		if (humanoid) this.applyWalkSpeed(humanoid);
+		this.reapplyWalkSpeed();
+	}
+
+	/**
+	 * Sets the walk speed the player has earned, for this body and every one
+	 * after it, under any override. Pass undefined for StarterPlayer's default.
+	 */
+	public setBaseWalkSpeed(speed: number | undefined): void {
+		this.baseWalkSpeed = speed;
+		this.reapplyWalkSpeed();
 	}
 
 	public getWalkSpeed(): number {
-		return this.walkSpeed ?? StarterPlayer.CharacterWalkSpeed;
+		return this.walkSpeed ?? this.baseWalkSpeed ?? StarterPlayer.CharacterWalkSpeed;
+	}
+
+	private reapplyWalkSpeed(): void {
+		const humanoid = this.character?.FindFirstChildOfClass("Humanoid");
+		if (humanoid) this.applyWalkSpeed(humanoid);
 	}
 
 	/** Spawns a character. The first spawn and every respawn run through here. */

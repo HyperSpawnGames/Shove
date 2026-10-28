@@ -7,6 +7,7 @@ export const DEFAULT_PLAYER_DATA: PlayerData = {
 	Strength: 0,
 	Wins: 0,
 	HighestCleared: 0,
+	QuadsFinished: 0,
 	Outlines: {},
 	Powers: {},
 	EquippedOutline: "",

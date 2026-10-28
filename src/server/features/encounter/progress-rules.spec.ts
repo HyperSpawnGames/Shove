@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@rbxts/jest-globals";
-import { canChallenge, clearedAfterWin } from "./progress-rules";
+import { canChallenge, clearedAfterWin, walkSpeedFor } from "./progress-rules";
 
 describe("canChallenge", () => {
 	it("opens the first giant to a new player", () => {
@@ -27,5 +27,22 @@ describe("clearedAfterWin", () => {
 
 	it("leaves progress alone on a replay", () => {
 		expect(clearedAfterWin(0, 2)).toBe(2);
+	});
+});
+
+describe("walkSpeedFor", () => {
+	it("starts at the base speed and steps evenly to the max", () => {
+		expect(walkSpeedFor(0, 7, 16, 100)).toBe(16);
+		expect(walkSpeedFor(1, 7, 16, 100)).toBe(28);
+		expect(walkSpeedFor(7, 7, 16, 100)).toBe(100);
+	});
+
+	it("never goes past the max or below the base", () => {
+		expect(walkSpeedFor(9, 7, 16, 100)).toBe(100);
+		expect(walkSpeedFor(-1, 7, 16, 100)).toBe(16);
+	});
+
+	it("stays at the base with no quads to finish", () => {
+		expect(walkSpeedFor(0, 0, 16, 100)).toBe(16);
 	});
 });

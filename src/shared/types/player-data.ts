@@ -12,6 +12,8 @@ export interface PlayerData {
 	Wins: number;
 	/** encounter feature: giants of the staircase beaten at least once; each opens the next ramp. */
 	HighestCleared: number;
+	/** encounter feature: quads finished by reaching the empty terrace after them; each raises walk speed. */
+	QuadsFinished: number;
 	/** boosts feature: outline tiers bought, by id. */
 	Outlines: { [id: string]: boolean };
 	/** boosts feature: power tiers bought, by id. */

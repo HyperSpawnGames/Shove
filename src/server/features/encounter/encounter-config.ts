@@ -38,3 +38,5 @@ export const SURGE_SHARE = 0.75;
 export const SURGE_TIMING = { minGap: 1.8, maxGap: 3.4, warning: 0.7, duration: 0.35 };
 /** Quiet seconds at the start of the struggle before the first surge can land. */
 export const FIRST_SURGE_DELAY = 1.2;
+/** Walk speed once the last empty terrace is reached; each quad finished gets the player a share of the way there. */
+export const MAX_WALK_SPEED = 100;
