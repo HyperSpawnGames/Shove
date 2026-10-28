@@ -121,6 +121,23 @@ describe("planDesert", () => {
 		expect(groups[1].some((part) => part.name === "OasisWater")).toBe(true);
 	});
 
+	it("makes dunes low, wide, walk-through mounds", () => {
+		const { terraces, zones } = syntheticZone(QUAD_SCALES);
+		const plan = planDesert(terraces, zones);
+		let dunes = 0;
+		byTerrace(plan.parts, plan.perTerrace).forEach((parts, i) => {
+			for (const part of parts) {
+				if (part.name.sub(1, 4) !== "Dune") continue;
+				dunes += 1;
+				expect(part.ellipsoid === true && !part.collides).toBe(true);
+				const top = part.cframe.Position.Y + part.size.Y / 2 - terraces[i].floorY;
+				expect(top > 0 && top < 3).toBe(true);
+				expect(math.max(part.size.X, part.size.Z)).toBeGreaterThan(2 * top);
+			}
+		});
+		expect(dunes).toBeGreaterThan(0);
+	});
+
 	it("is the same desert every time for a seed", () => {
 		const { terraces, zones } = syntheticZone(QUAD_SCALES);
 		const first = planDesert(terraces, zones).parts;

@@ -455,21 +455,52 @@ export const rocks: PropBuilder = (origin, k, rng) => {
 	return { parts, radius: reach };
 };
 
-/** A low dune: a capsule of sand, mostly sunk, so only a soft mound shows. */
+/**
+ * A flattened ellipsoid of sand rising `rise` above the floor. Its centre is
+ * sunk a third of its half-height, so it meets the floor at a shallow angle
+ * instead of standing on a rim.
+ */
+function mound(
+	name: string,
+	origin: CFrame,
+	x: number,
+	z: number,
+	size: Vector3,
+	rise: number,
+	color: Color3,
+): PartSpec {
+	const half = rise / 0.7;
+	return {
+		name,
+		size: new Vector3(size.X, 2 * half, size.Z),
+		cframe: at(origin, x, rise - half, z),
+		color,
+		material: Enum.Material.Sand,
+		ellipsoid: true,
+		collides: false,
+	};
+}
+
+/**
+ * A low, wide dune, long along its origin's X: a broad windward swell, a
+ * taller crest toward its +Z side and a narrow, steep slip face beyond it,
+ * so its profile rises gently and drops sharply. Ellipsoids collide as
+ * boxes, so the dune is walk-through sand.
+ */
 export const dune: PropBuilder = (origin, k, rng) => {
-	const diameter = 7 * k;
-	const length = rng.NextNumber(8, 14) * k;
-	const rise = rng.NextNumber(1.4, 2) * k;
-	const y = rise - diameter / 2;
-	const color = vary(SAND_DARK, rng, 0.04);
+	const length = rng.NextNumber(12, 18) * k;
+	const width = rng.NextNumber(7, 9) * k;
+	const rise = rng.NextNumber(1.2, 1.7) * k;
+	const body = SAND.Lerp(SAND_DARK, rng.NextNumber(0.2, 0.4));
+	const crest = SAND.Lerp(new Color3(1, 1, 1), 0.04);
+	const shift = rng.NextNumber(-0.12, 0.12) * length;
 	return {
 		parts: [
-			cylinder("Dune", length, diameter, at(origin, 0, y, 0), color, Enum.Material.Sand),
-			ball("DuneEnd", diameter, at(origin, -length / 2, y, 0), color, Enum.Material.Sand),
-			ball("DuneEnd", diameter, at(origin, length / 2, y, 0), color, Enum.Material.Sand),
+			mound("Dune", origin, 0, 0, new Vector3(length, 0, width), rise, body),
+			mound("DuneCrest", origin, shift, width * 0.18, new Vector3(length * 0.65, 0, width * 0.55), rise * 1.4, crest),
+			mound("DuneSlipFace", origin, shift, width * 0.38, new Vector3(length * 0.5, 0, width * 0.22), rise * 1.3, body),
 		],
-		// Claims only the mound that shows, not the sunk ends.
-		radius: length / 2 + diameter * 0.4,
+		radius: length / 2 + k,
 	};
 };
 
