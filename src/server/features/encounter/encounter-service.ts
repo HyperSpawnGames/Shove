@@ -7,7 +7,15 @@ import { EncounterSession } from "./encounter-session";
 import { registerGateGroups } from "./gate-collision";
 import { GIANTS, QUADS } from "./giants";
 import { buildGiant, buildRamp, buildTerrace, giantClearZone, laneClearZone } from "./staircase";
-import { Footprint, gateOpensAt, giantFootprint, layoutTerraces, planSlots, SPACER_FOOTPRINT } from "./world-layout";
+import {
+	Footprint,
+	gateOpensAt,
+	giantFootprint,
+	layoutTerraces,
+	planSlots,
+	SPACER_FOOTPRINT,
+	TerraceLayout,
+} from "./world-layout";
 import { ZONE_BUILDERS } from "./zones";
 import type { ZoneContext } from "./zones/types";
 
@@ -20,7 +28,14 @@ import type { ZoneContext } from "./zones/types";
  */
 @Service({})
 export class EncounterService implements OnStart {
+	/** The spacer terraces between quads, bottom first: where a fallen player respawns. */
+	private readonly checkpoints: TerraceLayout[] = [];
+
 	constructor(private readonly components: Components) {}
+
+	public getCheckpoints(): readonly TerraceLayout[] {
+		return this.checkpoints;
+	}
 
 	onStart(): void {
 		registerGateGroups();
@@ -69,7 +84,10 @@ export class EncounterService implements OnStart {
 							opensAt !== undefined ? { opensAt, beat: GIANTS[opensAt - 1] } : undefined,
 						)
 					: undefined;
-			if (slot.kind === "spacer") return;
+			if (slot.kind === "spacer") {
+				this.checkpoints.push(layout);
+				return;
+			}
 
 			const giant = GIANTS[slot.giantIndex];
 			const zone = zoneFor(slot.quadIndex);

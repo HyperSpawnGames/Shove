@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@rbxts/jest-globals";
 import {
+	checkpointSpawn,
 	gateOpensAt,
 	giantFootprint,
 	layoutTerraces,
@@ -7,6 +8,7 @@ import {
 	RAMP_RUN,
 	rampBetween,
 	SPACER_FOOTPRINT,
+	standingOn,
 } from "./world-layout";
 
 describe("planSlots", () => {
@@ -86,5 +88,36 @@ describe("gateOpensAt", () => {
 
 	it("opens the next quad's second giant with its first", () => {
 		expect(gateOpensAt(slots, 6)).toBe(5);
+	});
+});
+
+describe("standingOn", () => {
+	const [, terrace] = layoutTerraces([SPACER_FOOTPRINT, SPACER_FOOTPRINT]);
+	const middle = new Vector3(0, terrace.floorY + 3, (terrace.frontZ + terrace.backZ) / 2);
+
+	it("counts a body standing in the middle", () => {
+		expect(standingOn(middle, terrace)).toBe(true);
+	});
+
+	it("ignores a body off the sides, in front, behind, below or far above", () => {
+		expect(standingOn(middle.add(new Vector3(terrace.width, 0, 0)), terrace)).toBe(false);
+		expect(standingOn(new Vector3(0, middle.Y, terrace.frontZ + 1), terrace)).toBe(false);
+		expect(standingOn(new Vector3(0, middle.Y, terrace.backZ - 1), terrace)).toBe(false);
+		expect(standingOn(middle.sub(new Vector3(0, 10, 0)), terrace)).toBe(false);
+		expect(standingOn(middle.add(new Vector3(0, 30, 0)), terrace)).toBe(false);
+	});
+});
+
+describe("checkpointSpawn", () => {
+	const [, terrace] = layoutTerraces([SPACER_FOOTPRINT, SPACER_FOOTPRINT]);
+
+	it("stands the body in the middle of the terrace, on its floor", () => {
+		const spawn = checkpointSpawn(terrace, 3);
+		expect(spawn.Position.Y).toBe(terrace.floorY + 3);
+		expect(standingOn(spawn.Position, terrace)).toBe(true);
+	});
+
+	it("faces up the staircase", () => {
+		expect(checkpointSpawn(terrace, 3).LookVector.Z).toBeCloseTo(-1);
 	});
 });

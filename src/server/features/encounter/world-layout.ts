@@ -110,3 +110,26 @@ export function gateOpensAt(slots: readonly StairSlot[], index: number): number 
 	const needed = clearedNeededFor(slots[index]);
 	return needed > clearedNeededFor(slots[index - 1]) ? needed : undefined;
 }
+
+/** Studs above a terrace's floor that still count as standing on it (a jump, a body's height). */
+export const STANDING_HEIGHT = 12;
+
+/** Whether `position` is over `layout`'s walkable top and no higher than a jump above it. */
+export function standingOn(position: Vector3, layout: TerraceLayout): boolean {
+	return (
+		math.abs(position.X) <= layout.width / 2 &&
+		position.Z <= layout.frontZ &&
+		position.Z >= layout.backZ &&
+		position.Y >= layout.floorY - 1 &&
+		position.Y <= layout.floorY + STANDING_HEIGHT
+	);
+}
+
+/**
+ * Where a body respawns on a checkpoint terrace: its middle, `rootHeight`
+ * above the floor, facing up the staircase.
+ */
+export function checkpointSpawn(layout: TerraceLayout, rootHeight: number): CFrame {
+	const middle = new Vector3(0, layout.floorY + rootHeight, (layout.frontZ + layout.backZ) / 2);
+	return CFrame.lookAt(middle, middle.add(new Vector3(0, 0, -1)));
+}
