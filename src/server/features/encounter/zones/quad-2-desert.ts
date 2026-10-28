@@ -1,4 +1,6 @@
+import { Workspace } from "@rbxts/services";
 import { planDesert, terraceColor } from "./quad-2/desert-plan";
+import { SAND } from "./quad-2/desert-props";
 import type { PartEffect, PartSpec } from "./quad-2/part-spec";
 import type { ZoneBuilder } from "./types";
 
@@ -63,11 +65,6 @@ function buildPart(parent: Instance, spec: PartSpec): Part {
 	if (spec.transparency !== undefined) part.Transparency = spec.transparency;
 	part.TopSurface = Enum.SurfaceType.Smooth;
 	part.BottomSurface = Enum.SurfaceType.Smooth;
-	if (spec.ellipsoid) {
-		const mesh = new Instance("SpecialMesh");
-		mesh.MeshType = Enum.MeshType.Sphere;
-		mesh.Parent = part;
-	}
 	if (spec.effect !== undefined) attachEffect(part, spec.effect);
 	part.Parent = parent;
 	return part;
@@ -84,9 +81,14 @@ export const buildDesertZone: ZoneBuilder = (context) => {
 		terrace.Material = Enum.Material.Sand;
 		terrace.Color = terraceColor(index);
 	});
+	// Only the dunes are terrain sand, so the material's colour is theirs.
+	Workspace.Terrain.SetMaterialColor(Enum.Material.Sand, SAND);
 
 	const props = new Instance("Folder");
 	props.Name = "DesertProps";
-	for (const spec of planDesert(context.terraces, context.clearZones).parts) buildPart(props, spec);
+	for (const spec of planDesert(context.terraces, context.clearZones).parts) {
+		if (spec.terrain) Workspace.Terrain.FillBall(spec.cframe.Position, spec.size.X / 2, spec.material);
+		else buildPart(props, spec);
+	}
 	props.Parent = context.folder;
 };

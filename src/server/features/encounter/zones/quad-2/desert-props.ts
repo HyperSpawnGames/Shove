@@ -456,52 +456,48 @@ export const rocks: PropBuilder = (origin, k, rng) => {
 };
 
 /**
- * A flattened ellipsoid of sand rising `rise` above the floor. Its centre is
- * sunk a third of its half-height, so it meets the floor at a shallow angle
- * instead of standing on a rim.
+ * A cap of terrain sand `rise` high whose foot spans `radius` across the
+ * floor: a ball sunk until only that cap shows, so it meets the floor at a
+ * shallow angle. The rest of the ball is hidden inside the terrace.
  */
-function mound(
-	name: string,
-	origin: CFrame,
-	x: number,
-	z: number,
-	size: Vector3,
-	rise: number,
-	color: Color3,
-): PartSpec {
-	const half = rise / 0.7;
+function sandCap(name: string, origin: CFrame, x: number, z: number, radius: number, rise: number): PartSpec {
+	const ball = (radius * radius + rise * rise) / (2 * rise);
 	return {
 		name,
-		size: new Vector3(size.X, 2 * half, size.Z),
-		cframe: at(origin, x, rise - half, z),
-		color,
+		size: Vector3.one.mul(2 * ball),
+		cframe: at(origin, x, rise - ball, z),
+		color: SAND,
 		material: Enum.Material.Sand,
-		ellipsoid: true,
-		collides: false,
+		shape: Enum.PartType.Ball,
+		terrain: true,
+		collides: true,
 	};
 }
 
 /**
- * A low, wide dune, long along its origin's X: a broad windward swell, a
- * taller crest toward its +Z side and a narrow, steep slip face beyond it,
- * so its profile rises gently and drops sharply. Ellipsoids collide as
- * boxes, so the dune is walk-through sand.
+ * A dune, long along its origin's X, of terrain sand, so it carries the
+ * engine's sand texture and can be climbed: a broad swell, a lower shoulder
+ * at each end and a short, steep slip face on its +Z side, so its profile
+ * rises gently and drops sharply.
  */
 export const dune: PropBuilder = (origin, k, rng) => {
-	const length = rng.NextNumber(12, 18) * k;
-	const width = rng.NextNumber(7, 9) * k;
-	const rise = rng.NextNumber(1.2, 1.7) * k;
-	const body = SAND.Lerp(SAND_DARK, rng.NextNumber(0.2, 0.4));
-	const crest = SAND.Lerp(new Color3(1, 1, 1), 0.04);
-	const shift = rng.NextNumber(-0.12, 0.12) * length;
-	return {
-		parts: [
-			mound("Dune", origin, 0, 0, new Vector3(length, 0, width), rise, body),
-			mound("DuneCrest", origin, shift, width * 0.18, new Vector3(length * 0.65, 0, width * 0.55), rise * 1.4, crest),
-			mound("DuneSlipFace", origin, shift, width * 0.38, new Vector3(length * 0.5, 0, width * 0.22), rise * 1.3, body),
-		],
-		radius: length / 2 + k,
-	};
+	const length = rng.NextNumber(20, 28) * k;
+	const width = rng.NextNumber(12, 16) * k;
+	const rise = rng.NextNumber(3.5, 5) * k;
+	const shift = rng.NextNumber(-0.1, 0.1) * length;
+	const parts = [
+		sandCap("Dune", origin, 0, 0, width / 2, rise),
+		sandCap("DuneShoulder", origin, -0.3 * length, 0, width * 0.42, rise * 0.7),
+		sandCap("DuneShoulder", origin, 0.3 * length, 0, width * 0.42, rise * 0.7),
+		// Nearly a half ball, for the steep lee; never more, or it would overhang.
+		sandCap("DuneSlipFace", origin, shift, width * 0.3, width * 0.35, rise * 0.75),
+	];
+	let radius = 0;
+	for (const part of parts) {
+		const offset = part.cframe.Position.sub(origin.Position).mul(new Vector3(1, 0, 1)).Magnitude;
+		radius = math.max(radius, offset + part.size.X / 2);
+	}
+	return { parts, radius: radius + k };
 };
 
 /** A sandstone obelisk with a lit bronze brazier on top: a pair marks each terrace's front edge. */

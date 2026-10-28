@@ -121,7 +121,7 @@ describe("planDesert", () => {
 		expect(groups[1].some((part) => part.name === "OasisWater")).toBe(true);
 	});
 
-	it("makes dunes low, wide, walk-through mounds", () => {
+	it("makes dunes climbable mounds of terrain sand", () => {
 		const { terraces, zones } = syntheticZone(QUAD_SCALES);
 		const plan = planDesert(terraces, zones);
 		let dunes = 0;
@@ -129,10 +129,11 @@ describe("planDesert", () => {
 			for (const part of parts) {
 				if (part.name.sub(1, 4) !== "Dune") continue;
 				dunes += 1;
-				expect(part.ellipsoid === true && !part.collides).toBe(true);
+				expect(part.terrain === true && part.collides && part.shape === Enum.PartType.Ball).toBe(true);
+				// A sunk ball: the centre under the floor, only a cap above it.
 				const top = part.cframe.Position.Y + part.size.Y / 2 - terraces[i].floorY;
-				expect(top > 0 && top < 3).toBe(true);
-				expect(math.max(part.size.X, part.size.Z)).toBeGreaterThan(2 * top);
+				expect(part.cframe.Position.Y).toBeLessThan(terraces[i].floorY);
+				expect(top > 1 && top < 8).toBe(true);
 			}
 		});
 		expect(dunes).toBeGreaterThan(0);

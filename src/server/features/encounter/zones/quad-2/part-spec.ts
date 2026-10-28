@@ -16,11 +16,10 @@ export interface PartSpec {
 	/** Block when omitted. A cylinder's axis is its X. */
 	shape?: Enum.PartType;
 	/**
-	 * Drawn as an ellipsoid filling `size` (an engine sphere mesh, no asset),
-	 * since a Ball part must be round. Its collision is still the box, so
-	 * ellipsoids never collide.
+	 * Filled into the terrain as a ball of `material` (`shape` Ball, `size`
+	 * uniform) instead of built as a Part, so it shows the terrain's texture.
 	 */
-	ellipsoid?: boolean;
+	terrain?: boolean;
 	collides: boolean;
 	transparency?: number;
 	effect?: PartEffect;
