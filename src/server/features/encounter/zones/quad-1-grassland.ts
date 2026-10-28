@@ -32,13 +32,17 @@ function addSign(part: Part, text: string): void {
 function addPollen(part: Part): void {
 	const emitter = new Instance("ParticleEmitter");
 	emitter.Texture = POLLEN_TEXTURE;
-	emitter.Rate = 1.5;
+	emitter.Rate = 2.5;
 	emitter.Lifetime = new NumberRange(4, 6);
 	emitter.Speed = new NumberRange(0.3, 0.8);
 	emitter.SpreadAngle = new Vector2(180, 180);
 	emitter.Acceleration = new Vector3(0, 0.25, 0);
 	emitter.Drag = 0.5;
-	emitter.Size = new NumberSequence(0.15);
+	emitter.Size = new NumberSequence([
+		new NumberSequenceKeypoint(0, 0.35),
+		new NumberSequenceKeypoint(0.5, 0.5),
+		new NumberSequenceKeypoint(1, 0.35),
+	]);
 	emitter.Color = new ColorSequence(Color3.fromRGB(255, 236, 140));
 	emitter.LightEmission = 0.6;
 	emitter.Transparency = new NumberSequence([
