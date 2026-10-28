@@ -11,36 +11,45 @@ interface TrainingHudProps {
 }
 
 const PANEL_COLOR = Color3.fromRGB(30, 30, 30);
+const STRENGTH_GOLD = Color3.fromRGB(255, 200, 80);
 const TRAIN_COLOR = Color3.fromRGB(46, 160, 67);
 const STOP_COLOR = Color3.fromRGB(200, 60, 50);
 
-/** Strength, the training rate, the Train button and the +Strength popups. */
+/**
+ * Strength at the top right, under Wins, with the training rate; the Train
+ * button; and the +Strength popups. Every figure is effective Strength: what
+ * training saved, times any multiplier the server reports.
+ */
 export function TrainingHud({ onToggle }: TrainingHudProps) {
 	const strength = usePlayerField("Strength");
 	const training = usePlayerAttribute(TrainingAttribute.Training) === true;
 	const perRep = usePlayerAttribute(TrainingAttribute.StrengthPerRep);
 	const secondsPerRep = usePlayerAttribute(TrainingAttribute.SecondsPerRep);
-	const totalPunch = usePunch(strength, 1.15);
+	const reported = usePlayerAttribute(TrainingAttribute.StrengthMultiplier);
+	const multiplier = typeIs(reported, "number") ? reported : 1;
+	const effective = strength === undefined ? undefined : strength * multiplier;
+	const totalPunch = usePunch(effective, 1.15);
 	const buttonPunch = usePunch(training, 1.12);
 
 	if (strength === undefined) return <></>;
 
 	const rate =
 		typeIs(perRep, "number") && typeIs(secondsPerRep, "number") && secondsPerRep > 0
-			? `+${formatNumber(perRep)} / rep  ·  ${formatNumber(perRep / secondsPerRep)} / s`
+			? `+${formatNumber(perRep * multiplier)} / rep  ·  ${formatNumber((perRep * multiplier) / secondsPerRep)} / s`
 			: "";
 
 	return (
 		<>
 			<frame
 				key="StrengthPanel"
-				AnchorPoint={new Vector2(0, 0.5)}
-				Position={new UDim2(0, 16, 0.45, 0)}
+				AnchorPoint={new Vector2(1, 0)}
+				Position={new UDim2(1, -16, 0, 84)}
 				Size={UDim2.fromOffset(220, 84)}
 				BackgroundColor3={PANEL_COLOR}
 				BackgroundTransparency={0.2}
 			>
-				<uicorner CornerRadius={new UDim(0, 8)} />
+				<uicorner CornerRadius={new UDim(0, 12)} />
+				<uistroke Thickness={2} Color={STRENGTH_GOLD} Transparency={0.3} />
 				<uipadding PaddingLeft={new UDim(0, 12)} PaddingRight={new UDim(0, 12)} />
 				<uilistlayout
 					SortOrder={Enum.SortOrder.LayoutOrder}
@@ -50,10 +59,10 @@ export function TrainingHud({ onToggle }: TrainingHudProps) {
 				<textlabel
 					key="Label"
 					LayoutOrder={1}
-					Text="STRENGTH"
+					Text={multiplier > 1 ? `STRENGTH  ×${formatNumber(multiplier)}` : "STRENGTH"}
 					Font={Enum.Font.GothamBold}
 					TextSize={14}
-					TextColor3={Color3.fromRGB(255, 200, 80)}
+					TextColor3={STRENGTH_GOLD}
 					TextXAlignment={Enum.TextXAlignment.Left}
 					BackgroundTransparency={1}
 					Size={new UDim2(1, 0, 0, 16)}
@@ -61,7 +70,7 @@ export function TrainingHud({ onToggle }: TrainingHudProps) {
 				<textlabel
 					key="Total"
 					LayoutOrder={2}
-					Text={formatNumber(strength)}
+					Text={formatNumber(strength * multiplier)}
 					Font={Enum.Font.GothamBlack}
 					TextSize={30}
 					TextColor3={new Color3(1, 1, 1)}
