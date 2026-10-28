@@ -2,6 +2,7 @@ import { RAMP_RUN, RampLayout, RISE_PER_SLOT, TerraceLayout } from "../../world-
 import type { ClearZone } from "../types";
 import { allClear, PartSpec } from "./part-spec";
 import { bush, fence, flowers, HILL_GREENS, hill, hillSurface, path, PROP_RADIUS, rock, signpost, tree } from "./props";
+import { planTerraceSides } from "./terrace-sides";
 
 /** What the Grassland is planned from: the quad's slice of the staircase. */
 export interface GrasslandLayout {
@@ -10,7 +11,8 @@ export interface GrasslandLayout {
 	clearZones: readonly ClearZone[];
 }
 
-export const GRASSLAND_PART_BUDGET = 600;
+/** Raised from 600 to 700 for the terraces' dressed sides (about 45 parts each). */
+export const GRASSLAND_PART_BUDGET = 700;
 /** Same seed, same meadow: the world is identical every run. */
 const SEED = 1;
 /** Half the side of the 512-stud baseplate centred on the spawn. */
@@ -186,6 +188,18 @@ function dressTerrace(index: number, terrace: TerraceLayout, keepClear: readonly
 		for (const run of runs) if (allClear(run, keepClear)) for (const part of run) parts.push(part);
 	}
 
+	// Earth, rock and an overhanging grass lip on a raised terrace's sides, from their own seed.
+	const sides = planTerraceSides(
+		group,
+		terrace,
+		k,
+		terraceColor(index),
+		RAMP_CLEAR_WIDTH / 2,
+		keepClear,
+		SEED * 7919 + index,
+	);
+	for (const part of sides) parts.push(part);
+
 	if (!raised) {
 		const sign = placeSignpost(group, terrace, k, keepClear);
 		if (sign) {
@@ -219,7 +233,7 @@ function dressTerrace(index: number, terrace: TerraceLayout, keepClear: readonly
 	let patches = 0;
 	scatter(rng, parts, spots, keepClear, area(flowerRadius, LANE_HALF), flowerRadius, raised ? 8 : 11, (base) => {
 		patches += 1;
-		return flowers(group, base, k, rng, patches % 4 === 1);
+		return flowers(group, base, k, rng, patches % 3 === 1);
 	});
 	return parts;
 }
