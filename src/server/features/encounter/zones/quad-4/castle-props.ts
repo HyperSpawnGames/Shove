@@ -43,13 +43,21 @@ function cylinder(origin: CFrame, name: string, height: number, diameter: number
 	});
 }
 
-/** A crenellated curtain wall from `from` to `to`, both on the floor and in a line along X or Z. */
-export function wallRun(from: Vector3, to: Vector3, u: number): Piece[] {
+/** A full-height wall: the side walls. */
+export const WALL_HEIGHT = 9;
+/** A low parapet: the front walls beside the gateway, low enough to see the terrace over from the ramp below. */
+export const PARAPET_HEIGHT = 4;
+
+/**
+ * A crenellated wall `height` studs high (before scale) from `from` to `to`,
+ * both on the floor and in a line along X or Z.
+ */
+export function wallRun(from: Vector3, to: Vector3, u: number, height = WALL_HEIGHT, name = "Wall"): Piece[] {
 	const thickness = 3 * u;
-	const height = 9 * u;
 	const length = to.sub(from).Magnitude;
 	const origin = CFrame.lookAt(from.Lerp(to, 0.5), to);
-	const pieces = [piece(origin, "Wall", new Vector3(thickness, height, length), new CFrame(0, height / 2, 0), stone())];
+	const top = height * u;
+	const pieces = [piece(origin, name, new Vector3(thickness, top, length), new CFrame(0, top / 2, 0), stone())];
 	// Merlons as wide as the gaps between them, the classic battlement rhythm.
 	const merlon = 2.4 * u;
 	const count = math.max(1, math.floor(length / (7 * u)));
@@ -59,9 +67,9 @@ export function wallRun(from: Vector3, to: Vector3, u: number): Piece[] {
 		pieces.push(
 			piece(
 				origin,
-				"Merlon",
+				`${name}Merlon`,
 				new Vector3(thickness, merlon, spacing / 2),
-				new CFrame(0, height + merlon / 2, z),
+				new CFrame(0, top + merlon / 2, z),
 				stone(),
 			),
 		);

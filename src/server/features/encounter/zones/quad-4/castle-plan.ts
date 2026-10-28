@@ -8,6 +8,7 @@ import {
 	DARK_STONE,
 	gateway,
 	hayBales,
+	PARAPET_HEIGHT,
 	STONE,
 	wallRun,
 	watchtower,
@@ -127,16 +128,16 @@ export function planCastleTerrace(layout: TerraceLayout, clearZones: readonly Cl
 		tryPlace(wallRun(new Vector3(x, y, towerFrontZ), new Vector3(x, y, towerBackZ), u), false);
 	}
 
-	// The gateway, its lintel well above the lane, and the curtain walls either side of it.
+	// The gateway, its lintel well above the lane, and a low crenellated parapet either side of it,
+	// so a player on the ramp below sees the terrace floor over it as they climb.
 	const clearance = math.max(16, 17 * u);
 	const gateZ = layout.frontZ - GATE_DEPTH - wall / 2;
 	tryPlace(gateway(new Vector3(0, y, gateZ), GATE_INNER_HALF, clearance, u), false);
 	const curtainFrom = GATE_INNER_HALF + 4 * u;
 	for (const side of sides) {
-		tryPlace(
-			wallRun(new Vector3(side * curtainFrom, y, gateZ), new Vector3(side * (half - radius), y, gateZ), u),
-			false,
-		);
+		const from = new Vector3(side * curtainFrom, y, gateZ);
+		const to = new Vector3(side * (half - radius), y, gateZ);
+		tryPlace(wallRun(from, to, u, PARAPET_HEIGHT, "Parapet"), false);
 	}
 	for (const side of sides) {
 		const at = facingLane(side * (curtainFrom + 2.5 * u), y, gateZ - wall / 2 - 2.5 * u, side);
