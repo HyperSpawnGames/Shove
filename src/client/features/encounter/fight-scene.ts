@@ -16,7 +16,16 @@ import {
 	THROW_SECONDS,
 } from "./encounter-config";
 import { puffDust } from "./dust";
-import { flailPose, stepPose, strainPose, stumblePose, victoryPose, withFlatFeet } from "./fight-poses";
+import {
+	flailPose,
+	reachDownAngle,
+	reachDownPose,
+	stepPose,
+	strainPose,
+	stumblePose,
+	victoryPose,
+	withFlatFeet,
+} from "./fight-poses";
 import { approach, Stepper } from "./stepper";
 
 /** Roblox's default R15 emotes and fall, free to play in any game. */
@@ -83,6 +92,8 @@ export class FightScene {
 	private resumeAnimate?: () => void;
 	/** Giant height over a player's, so its nudges and the camera scale with it. */
 	private giantScale = 1;
+	/** Degrees the giant angles its arms and body down, so its palms meet the player's. */
+	private giantReachDown = 0;
 	private cameraEye = Vector3.zero;
 	private cameraFocus = Vector3.zero;
 	private floorY = 0;
@@ -130,6 +141,11 @@ export class FightScene {
 		this.resumeAnimate = pauseAnimate(character!);
 		this.giantPoser = new SpringPoser(new RigPoser(giant));
 		this.giantScale = giant.GetExtentsSize().Y / BASE_HEIGHT;
+		this.giantReachDown = reachDownAngle(
+			giant.GetExtentsSize().Y,
+			character!.GetExtentsSize().Y,
+			giantStart.Position.sub(playerStart.Position).mul(new Vector3(1, 0, 1)).Magnitude,
+		);
 		this.giantSteps = new Stepper(STRIDE * this.giantScale, FULL_STEP_SPEED * this.giantScale);
 		const humanoid = character!.FindFirstChildOfClass("Humanoid");
 		this.floorY = playerStart.Position.Y - (humanoid ? humanoid.HipHeight : 2) - root.Size.Y / 2;
@@ -298,15 +314,18 @@ export class FightScene {
 			windup: 0,
 			lunge: 0,
 		});
-		let giantPose = strainPose({
-			time: now + 0.7,
-			lead: -lead,
-			shove: 0,
-			thrustSide: 1,
-			hit: this.giantHit,
-			windup: this.windup,
-			lunge: this.lunge,
-		});
+		let giantPose = addPoses(
+			strainPose({
+				time: now + 0.7,
+				lead: -lead,
+				shove: 0,
+				thrustSide: 1,
+				hit: this.giantHit,
+				windup: this.windup,
+				lunge: this.lunge,
+			}),
+			reachDownPose(this.giantReachDown),
+		);
 
 		playerPose = addPoses(
 			playerPose,

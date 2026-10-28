@@ -162,3 +162,29 @@ export function flailPose(time: number): Pose {
 		LeftKnee: deg(-50),
 	};
 }
+
+/** Shoulder height as a share of a fighter's height (R15 rigs, any scale). */
+const SHOULDER_SHARE = 0.8;
+/** The steepest the giant angles down; past this the arms would fold into its own body. */
+const MAX_REACH_DOWN = 45;
+
+/**
+ * Degrees a fighter `giantHeight` tall angles its arms down so its palms meet
+ * those of a fighter `playerHeight` tall standing `distance` away on the same
+ * floor: the stance is tuned for two of a size, so only the shoulders'
+ * height difference needs aiming at. Never upward, never past 45.
+ */
+export function reachDownAngle(giantHeight: number, playerHeight: number, distance: number): number {
+	const drop = (giantHeight - playerHeight) * SHOULDER_SHARE;
+	if (drop <= 0) return 0;
+	return math.min(math.deg(math.atan2(drop, math.max(distance, 1e-3))), MAX_REACH_DOWN);
+}
+
+/** Lowers both arms by `angle` and bends the body a quarter of it toward the opponent. */
+export function reachDownPose(angle: number): Pose {
+	return {
+		Waist: deg(-angle * 0.25),
+		RightShoulder: deg(-angle),
+		LeftShoulder: deg(-angle),
+	};
+}
