@@ -22,6 +22,8 @@ export interface PartSpec {
 	/** Tall enough to block a view: keeps the wider VIEW_MARGIN from the clear zones. */
 	tall: boolean;
 	effect?: PartEffect;
+	/** For the snowfall: studs from the sheet down to the floor, so every flake lives long enough to land. */
+	drop?: number;
 }
 
 export interface FrostProp {
@@ -62,6 +64,7 @@ function spec(
 		castShadow: options.castShadow ?? true,
 		tall: options.tall ?? false,
 		effect: options.effect,
+		drop: options.drop,
 	};
 }
 
@@ -330,22 +333,26 @@ export function snowDrift(rng: Random, ground: CFrame, unit: number): FrostProp 
 /**
  * A row of icicles hanging from a terrace's top edge down its cliff face.
  * `edge` sits on the edge at floor height, its look vector pointing out of
- * the cliff; the row runs along its right vector. One Wedge per icicle,
- * hung upside down with its flat back on the cliff.
+ * the cliff; the row runs along its right vector. One CornerWedge per
+ * icicle, hung upside down: a square-topped pyramid narrowing to a point,
+ * so it reads as a cone from any angle, not a flat blade.
  */
 export function icicleRow(rng: Random, edge: CFrame, unit: number, count: number): FrostProp {
 	const parts: PartSpec[] = [];
 	const spacing = 1.6 * unit;
 	for (let index = 0; index < count; index++) {
 		const length = rng.NextNumber(2.5, 7) * unit;
-		const width = rng.NextNumber(0.6, 1.1) * unit;
-		const depth = rng.NextNumber(0.7, 1.3) * unit;
+		// A square top keeps the box the same whichever quarter turn the point takes.
+		const across = rng.NextNumber(0.9, 1.4) * unit;
 		const along = (index - (count - 1) / 2) * spacing + rng.NextNumber(-0.3, 0.3) * unit;
-		// Looking out of the cliff, local +Z points into it; turning about Z hangs the point down against the face.
-		const frame = edge.mul(new CFrame(along, -length / 2, -depth / 2)).mul(CFrame.Angles(0, 0, math.pi));
+		// Flipped about Z the pyramid hangs from its full face; a random quarter turn moves its point between corners.
+		const frame = edge
+			.mul(new CFrame(along, -length / 2, -across / 2))
+			.mul(CFrame.Angles(0, (rng.NextInteger(0, 3) * math.pi) / 2, 0))
+			.mul(CFrame.Angles(0, 0, math.pi));
 		parts.push(
-			spec("Icicle", new Vector3(width, length, depth), frame, pick(rng, ICE), Enum.Material.Ice, {
-				shape: Enum.PartType.Wedge,
+			spec("Icicle", new Vector3(across, length, across), frame, pick(rng, ICE), Enum.Material.Ice, {
+				shape: Enum.PartType.CornerWedge,
 				collide: false,
 				transparency: 0.2,
 				castShadow: false,
@@ -355,8 +362,8 @@ export function icicleRow(rng: Random, edge: CFrame, unit: number, count: number
 	return { kind: "icicles", parts };
 }
 
-/** An invisible sheet high over a terrace that snow drifts down from. One part. */
-export function snowfall(frame: CFrame, size: Vector3): FrostProp {
+/** An invisible sheet high over a terrace that snow drifts down from, `drop` studs to the floor. One part. */
+export function snowfall(frame: CFrame, size: Vector3, drop: number): FrostProp {
 	return {
 		kind: "snowfall",
 		parts: [
@@ -365,6 +372,7 @@ export function snowfall(frame: CFrame, size: Vector3): FrostProp {
 				transparency: 1,
 				castShadow: false,
 				effect: "snowfall",
+				drop,
 			}),
 		],
 	};
