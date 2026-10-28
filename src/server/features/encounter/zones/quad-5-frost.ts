@@ -7,9 +7,11 @@ const FLOOR_COLORS = [Color3.fromRGB(232, 240, 250), Color3.fromRGB(222, 233, 24
 
 const SNOWFLAKE = "rbxasset://textures/particles/smoke_main.dds";
 const SPARKLE = "rbxasset://textures/particles/sparkles_main.dds";
+/** Studs a second the slowest snowflake falls; lifetimes are set from it so every flake lands. */
+const SLOWEST_FLAKE = 5;
 
 /** Hangs a spec's light or particles on its part. */
-function addEffect(part: Part, effect: PartSpec["effect"]): void {
+function addEffect(part: Part, effect: PartSpec["effect"], drop: number): void {
 	if (effect === "crystalGlow") {
 		const light = new Instance("PointLight");
 		light.Color = Color3.fromRGB(120, 190, 255);
@@ -30,7 +32,7 @@ function addEffect(part: Part, effect: PartSpec["effect"]): void {
 		glints.Speed = new NumberRange(0, 0.3);
 		glints.Parent = part;
 	} else if (effect === "snowfall") {
-		// The sheet spans the terrace; flakes fall from its underside with a light crosswind.
+		// The sheet spans the terrace; flakes fall from it with a faint crosswind.
 		const flakes = new Instance("ParticleEmitter");
 		flakes.Texture = SNOWFLAKE;
 		flakes.Shape = Enum.ParticleEmitterShape.Box;
@@ -41,16 +43,19 @@ function addEffect(part: Part, effect: PartSpec["effect"]): void {
 		flakes.Size = new NumberSequence(0.45);
 		flakes.Transparency = new NumberSequence([
 			new NumberSequenceKeypoint(0, 1),
-			new NumberSequenceKeypoint(0.1, 0.1),
-			new NumberSequenceKeypoint(0.85, 0.1),
+			new NumberSequenceKeypoint(0.04, 0.1),
+			new NumberSequenceKeypoint(0.95, 0.1),
 			new NumberSequenceKeypoint(1, 1),
 		]);
-		flakes.Rate = math.clamp((part.Size.X * part.Size.Z) / 250, 10, 40);
-		// About 5 studs a second down: a sheet 50 to 60 studs up reaches the floor as it fades.
-		flakes.Speed = new NumberRange(4, 6);
-		flakes.Lifetime = new NumberRange(10, 13);
-		flakes.Acceleration = new Vector3(0.6, 0, 0.3);
-		flakes.SpreadAngle = new Vector2(10, 10);
+		// Longer lives than before, so fewer per second keeps the same flakes in the air: snow, not fog.
+		flakes.Rate = math.clamp((part.Size.X * part.Size.Z) / 300, 10, 32);
+		// Even the slowest flake (SLOWEST_FLAKE studs a second, falling straight) reaches the floor
+		// before its life is 95% spent, still opaque: it lands and sinks into the snow.
+		flakes.Speed = new NumberRange(SLOWEST_FLAKE, SLOWEST_FLAKE + 1.5);
+		const fall = drop / SLOWEST_FLAKE;
+		flakes.Lifetime = new NumberRange(fall + 1.5, fall + 2.5);
+		flakes.Acceleration = new Vector3(0.1, 0, 0.05);
+		flakes.SpreadAngle = new Vector2(8, 8);
 		flakes.RotSpeed = new NumberRange(-60, 60);
 		flakes.Rotation = new NumberRange(0, 360);
 		flakes.Parent = part;
@@ -75,7 +80,7 @@ function buildPart(parent: Instance, spec: PartSpec): Part {
 	}
 	part.TopSurface = Enum.SurfaceType.Smooth;
 	part.BottomSurface = Enum.SurfaceType.Smooth;
-	addEffect(part, spec.effect);
+	addEffect(part, spec.effect, spec.drop ?? 0);
 	part.Parent = parent;
 	return part;
 }

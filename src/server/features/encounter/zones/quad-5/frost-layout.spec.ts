@@ -99,12 +99,14 @@ describe("planFrost", () => {
 				});
 			});
 
-			it("floats the snowfall above every clear zone, with nothing solid in it", () => {
+			it("floats the snowfall above every clear zone, nothing solid, knowing its drop to the floor", () => {
 				let sheets = 0;
-				everyPart(plan, (_, prop, part) => {
+				everyPart(plan, (entry, prop, part) => {
 					if (prop.kind !== "snowfall") return;
 					sheets += 1;
 					expect(part.collide).toBe(false);
+					// The emitter times every flake to land from this height.
+					expect(math.abs(part.cframe.Y - entry.terrace.floorY - (part.drop ?? 0))).toBeLessThan(0.01);
 					const box = worldBounds(part.cframe, part.size);
 					for (const zone of zones) expect(overlaps(box, zone)).toBe(false);
 				});

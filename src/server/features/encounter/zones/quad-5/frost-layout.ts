@@ -155,7 +155,11 @@ function planTerrace(terrace: TerraceLayout, zones: readonly Bounds[], rng: Rand
 	// Snow drifts down over the whole terrace from above the spires and every clear zone.
 	const sheetY = math.max(zonesTop(terrace, zones) + SNOW_ABOVE_ZONES, terrace.floorY + 48 * unit);
 	add(
-		snowfall(new CFrame(0, sheetY + 0.5, (terrace.frontZ + terrace.backZ) / 2), new Vector3(terrace.width, 1, depth)),
+		snowfall(
+			new CFrame(0, sheetY + 0.5, (terrace.frontZ + terrace.backZ) / 2),
+			new Vector3(terrace.width, 1, depth),
+			sheetY + 0.5 - terrace.floorY,
+		),
 	);
 
 	const make = (kind: GroundKind, ground: CFrame): FrostProp => {
