@@ -1,5 +1,6 @@
 import { CollectionService, ServerStorage } from "@rbxts/services";
 import { ANIMATION_SCALE_ATTRIBUTE, SCALED_GIANT_TAG } from "shared/features/encounter/giant-scale";
+import { isWeaponAccessory } from "./giant-weapons";
 import type { GiantDefinition } from "./giants";
 
 /** Roblox's default R15 idle: free to play in any game. */
@@ -54,6 +55,7 @@ function scaleGiant(model: Model, scale: number): void {
  * scales a rig in place, so it must be in the world first), or undefined
  * when the prefab is missing. Only the root is anchored: the body hangs off
  * it by its joints, so animation tracks and posed joints can move it.
+ * Weapons come off: giants fight bare-handed (giant-weapons.ts).
  */
 export function cloneGiant(giant: GiantDefinition, parent: Instance): Model | undefined {
 	const prefab = ServerStorage.FindFirstChild("Giants")?.FindFirstChild(giant.modelId);
@@ -63,6 +65,9 @@ export function cloneGiant(giant: GiantDefinition, parent: Instance): Model | un
 	}
 
 	const model = prefab.Clone();
+	for (const child of model.GetChildren()) {
+		if (child.IsA("Accessory") && isWeaponAccessory(child.Name)) child.Destroy();
+	}
 	const humanoid = model.FindFirstChildOfClass("Humanoid");
 	if (humanoid) {
 		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None;
